@@ -124,7 +124,7 @@
             top: 0;
             left: 0;
             width: 100%;
-            padding: 25px 60px;
+            padding: clamp(15px, 3vw, 25px) clamp(20px, 5vw, 60px);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -135,7 +135,7 @@
 
         .logo {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.8rem;
+            font-size: clamp(1.4rem, 3vw, 1.8rem);
             font-weight: 700;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
@@ -145,7 +145,7 @@
 
         .nav-links {
             display: flex;
-            gap: 50px;
+            gap: clamp(20px, 4vw, 50px);
             list-style: none;
         }
 
@@ -153,7 +153,7 @@
             color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.9rem;
+            font-size: clamp(0.75rem, 1.5vw, 0.9rem);
             font-weight: 500;
             letter-spacing: 0.1em;
             text-transform: uppercase;
@@ -255,26 +255,26 @@
         }
 
         .orb-1 {
-            width: 600px;
-            height: 600px;
+            width: clamp(300px, 50vw, 600px);
+            height: clamp(300px, 50vw, 600px);
             background: radial-gradient(circle, rgba(0, 240, 255, 0.4) 0%, transparent 70%);
-            top: -200px;
-            left: -200px;
+            top: clamp(-100px, -15vw, -200px);
+            left: clamp(-100px, -15vw, -200px);
             animation-delay: 0s;
         }
 
         .orb-2 {
-            width: 500px;
-            height: 500px;
+            width: clamp(250px, 40vw, 500px);
+            height: clamp(250px, 40vw, 500px);
             background: radial-gradient(circle, rgba(255, 0, 255, 0.3) 0%, transparent 70%);
-            bottom: -150px;
-            right: -150px;
+            bottom: clamp(-75px, -10vw, -150px);
+            right: clamp(-75px, -10vw, -150px);
             animation-delay: -4s;
         }
 
         .orb-3 {
-            width: 400px;
-            height: 400px;
+            width: clamp(200px, 30vw, 400px);
+            height: clamp(200px, 30vw, 400px);
             background: radial-gradient(circle, rgba(0, 240, 255, 0.2) 0%, transparent 70%);
             top: 50%;
             left: 50%;
@@ -305,8 +305,8 @@
         }
 
         .shape-1 {
-            width: 200px;
-            height: 200px;
+            width: clamp(80px, 15vw, 200px);
+            height: clamp(80px, 15vw, 200px);
             top: 15%;
             left: 10%;
             border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
@@ -314,8 +314,8 @@
         }
 
         .shape-2 {
-            width: 150px;
-            height: 150px;
+            width: clamp(60px, 12vw, 150px);
+            height: clamp(60px, 12vw, 150px);
             bottom: 25%;
             right: 15%;
             border-radius: 50%;
@@ -324,8 +324,8 @@
         }
 
         .shape-3 {
-            width: 100px;
-            height: 100px;
+            width: clamp(50px, 8vw, 100px);
+            height: clamp(50px, 8vw, 100px);
             top: 60%;
             left: 5%;
             transform: rotate(45deg);
@@ -389,24 +389,24 @@
             text-align: center;
             z-index: 10;
             position: relative;
-            max-width: 1000px;
-            padding: 0 20px;
+            max-width: min(1000px, 90vw);
+            padding: 0 clamp(10px, 3vw, 20px);
         }
 
         .hero-badge {
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            padding: 10px 25px;
+            padding: clamp(8px, 1.5vw, 10px) clamp(15px, 3vw, 25px);
             background: rgba(0, 240, 255, 0.1);
             border: 1px solid rgba(0, 240, 255, 0.3);
             border-radius: 50px;
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.85rem;
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
             font-weight: 500;
             letter-spacing: 0.2em;
             color: var(--primary);
-            margin-bottom: 40px;
+            margin-bottom: clamp(20px, 4vw, 40px);
             backdrop-filter: blur(10px);
             animation: badgePulse 2s ease-in-out infinite;
         }
@@ -475,10 +475,10 @@
         }
 
         .hero-description {
-            font-size: 1.25rem;
+            font-size: clamp(1rem, 2vw, 1.25rem);
             color: rgba(255, 255, 255, 0.6);
-            max-width: 600px;
-            margin: 0 auto 50px;
+            max-width: min(600px, 90vw);
+            margin: 0 auto clamp(30px, 5vw, 50px);
             font-weight: 300;
             letter-spacing: 0.02em;
             opacity: 0;
@@ -498,7 +498,7 @@
 
         .hero-cta {
             display: flex;
-            gap: 20px;
+            gap: clamp(10px, 2vw, 20px);
             justify-content: center;
             flex-wrap: wrap;
             opacity: 0;
@@ -506,9 +506,9 @@
         }
 
         .btn {
-            padding: 18px 45px;
+            padding: clamp(14px, 2.5vw, 18px) clamp(30px, 5vw, 45px);
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.9rem;
+            font-size: clamp(0.75rem, 1.5vw, 0.9rem);
             font-weight: 600;
             letter-spacing: 0.15em;
             text-transform: uppercase;
@@ -564,14 +564,14 @@
         /* 3D Profile Card */
         .hero-3d-container {
             perspective: 1500px;
-            margin-top: 80px;
+            margin-top: clamp(40px, 8vw, 80px);
             opacity: 0;
             animation: fadeInUp 1s ease forwards 1.2s;
         }
 
         .hero-3d-card {
-            width: 280px;
-            height: 360px;
+            width: clamp(200px, 30vw, 280px);
+            height: clamp(260px, 40vw, 360px);
             position: relative;
             transform-style: preserve-3d;
             animation: float3dCard 6s ease-in-out infinite;
@@ -694,26 +694,28 @@
 
         /* Sections */
         section {
-            padding: 150px 60px;
+            padding: clamp(80px, 12vw, 150px) clamp(20px, 5vw, 60px);
             position: relative;
+            max-width: 1600px;
+            margin: 0 auto;
         }
 
         .section-header {
             text-align: center;
-            margin-bottom: 100px;
+            margin-bottom: clamp(50px, 8vw, 100px);
         }
 
         .section-tag {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.8rem;
+            font-size: clamp(0.7rem, 1.5vw, 0.8rem);
             font-weight: 600;
-            letter-spacing: 0.4em;
+            letter-spacing: clamp(0.2em, 0.4vw, 0.4em);
             text-transform: uppercase;
             color: var(--secondary);
-            margin-bottom: 20px;
+            margin-bottom: clamp(10px, 2vw, 20px);
             display: inline-flex;
             align-items: center;
-            gap: 15px;
+            gap: clamp(8px, 1.5vw, 15px);
         }
 
         .section-tag::before,
@@ -745,11 +747,17 @@
 
         .about-content {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 100px;
+            grid-template-columns: 1fr;
+            gap: clamp(40px, 8vw, 100px);
             max-width: 1400px;
             margin: 0 auto;
             align-items: center;
+        }
+
+        @media (min-width: 1024px) {
+            .about-content {
+                grid-template-columns: 1fr 1fr;
+            }
         }
 
         .about-image {
@@ -771,9 +779,9 @@
 
         .about-image-bg {
             width: 100%;
-            height: 500px;
+            height: clamp(300px, 50vw, 500px);
             background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(255, 0, 255, 0.1));
-            border-radius: 30px;
+            border-radius: clamp(20px, 4vw, 30px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -803,24 +811,24 @@
         }
 
         .about-avatar {
-            width: 180px;
-            height: 180px;
+            width: clamp(120px, 20vw, 180px);
+            height: clamp(120px, 20vw, 180px);
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
             font-family: 'Syne', sans-serif;
-            font-size: 4rem;
+            font-size: clamp(2.5rem, 5vw, 4rem);
             font-weight: 800;
             color: var(--dark);
             box-shadow: 0 0 60px rgba(0, 240, 255, 0.4);
-            margin-bottom: 20px;
+            margin-bottom: clamp(10px, 2vw, 20px);
         }
 
         .about-image-content h3 {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.5rem;
+            font-size: clamp(1.1rem, 2.5vw, 1.5rem);
             font-weight: 600;
             color: #fff;
         }
@@ -844,32 +852,32 @@
 
         .about-text h3 {
             font-family: 'Syne', sans-serif;
-            font-size: 2.5rem;
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
             font-weight: 700;
-            margin-bottom: 30px;
+            margin-bottom: clamp(20px, 3vw, 30px);
             color: #fff;
         }
 
         .about-text p {
-            font-size: 1.1rem;
+            font-size: clamp(0.95rem, 1.8vw, 1.1rem);
             line-height: 1.9;
             color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 25px;
+            margin-bottom: clamp(15px, 2.5vw, 25px);
         }
 
         .about-stats {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-            margin-top: 50px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: clamp(15px, 3vw, 30px);
+            margin-top: clamp(30px, 5vw, 50px);
         }
 
         .stat-item {
             text-align: center;
-            padding: 30px 20px;
+            padding: clamp(20px, 3vw, 30px) clamp(10px, 2vw, 20px);
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(0, 240, 255, 0.1);
-            border-radius: 20px;
+            border-radius: clamp(15px, 2vw, 20px);
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
@@ -881,7 +889,7 @@
 
         .stat-number {
             font-family: 'Syne', sans-serif;
-            font-size: 3.5rem;
+            font-size: clamp(2rem, 5vw, 3.5rem);
             font-weight: 800;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
@@ -891,7 +899,7 @@
 
         .stat-label {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.85rem;
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
             font-weight: 500;
             letter-spacing: 0.15em;
             text-transform: uppercase;
@@ -906,8 +914,8 @@
 
         .expertise-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: clamp(20px, 3vw, 30px);
             max-width: 1400px;
             margin: 0 auto;
         }
@@ -915,8 +923,8 @@
         .expertise-card {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 25px;
-            padding: 50px 35px;
+            border-radius: clamp(20px, 3vw, 25px);
+            padding: clamp(30px, 4vw, 50px) clamp(25px, 3vw, 35px);
             position: relative;
             overflow: hidden;
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -947,15 +955,15 @@
         }
 
         .expertise-icon {
-            width: 80px;
-            height: 80px;
+            width: clamp(60px, 8vw, 80px);
+            height: clamp(60px, 8vw, 80px);
             background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(255, 0, 255, 0.1));
-            border-radius: 20px;
+            border-radius: clamp(15px, 2vw, 20px);
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 2.5rem;
-            margin-bottom: 30px;
+            font-size: clamp(1.8rem, 3vw, 2.5rem);
+            margin-bottom: clamp(20px, 3vw, 30px);
             position: relative;
             z-index: 1;
             transition: all 0.4s ease;
@@ -968,9 +976,9 @@
 
         .expertise-card h3 {
             font-family: 'Syne', sans-serif;
-            font-size: 1.4rem;
+            font-size: clamp(1.1rem, 2vw, 1.4rem);
             font-weight: 700;
-            margin-bottom: 15px;
+            margin-bottom: clamp(10px, 1.5vw, 15px);
             color: #fff;
             position: relative;
             z-index: 1;
@@ -981,6 +989,7 @@
             line-height: 1.8;
             position: relative;
             z-index: 1;
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
         }
 
         .expertise-card .glow-line {
@@ -1011,15 +1020,15 @@
 
         .skills-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 50px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: clamp(20px, 4vw, 50px);
         }
 
         .skill-category {
-            padding: 40px 30px;
+            padding: clamp(25px, 3vw, 40px) clamp(20px, 2.5vw, 30px);
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 25px;
+            border-radius: clamp(20px, 3vw, 25px);
             transition: all 0.4s ease;
             opacity: 0;
             transform: translateY(30px);
@@ -1037,16 +1046,16 @@
 
         .skill-category h3 {
             font-family: 'Syne', sans-serif;
-            font-size: 1.2rem;
+            font-size: clamp(1rem, 1.8vw, 1.2rem);
             font-weight: 700;
             color: var(--secondary);
-            margin-bottom: 30px;
-            padding-bottom: 15px;
+            margin-bottom: clamp(20px, 2.5vw, 30px);
+            padding-bottom: clamp(10px, 1.5vw, 15px);
             border-bottom: 1px solid rgba(255, 0, 255, 0.2);
         }
 
         .skill-item {
-            margin-bottom: 25px;
+            margin-bottom: clamp(15px, 2vw, 25px);
         }
 
         .skill-item:last-child {
@@ -1061,22 +1070,22 @@
 
         .skill-name {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.95rem;
+            font-size: clamp(0.85rem, 1.5vw, 0.95rem);
             font-weight: 500;
             color: #fff;
         }
 
         .skill-percent {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.85rem;
+            font-size: clamp(0.75rem, 1.3vw, 0.85rem);
             font-weight: 600;
             color: var(--primary);
         }
 
         .skill-bar {
-            height: 12px;
+            height: clamp(8px, 1.2vw, 12px);
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
+            border-radius: clamp(4px, 0.6vw, 6px);
             overflow: hidden;
             position: relative;
         }
@@ -1084,7 +1093,7 @@
         .skill-progress {
             height: 100%;
             background: linear-gradient(90deg, var(--primary), var(--secondary));
-            border-radius: 6px;
+            border-radius: clamp(4px, 0.6vw, 6px);
             width: 0;
             transition: width 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             box-shadow: 0 0 20px var(--primary);
@@ -1114,17 +1123,17 @@
 
         .projects-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: clamp(20px, 4vw, 40px);
             max-width: 1400px;
             margin: 0 auto;
         }
 
         .project-card {
             position: relative;
-            border-radius: 30px;
+            border-radius: clamp(20px, 3vw, 30px);
             overflow: hidden;
-            height: 450px;
+            height: clamp(350px, 50vw, 450px);
             cursor: pointer;
             transform-style: preserve-3d;
             perspective: 1000px;
@@ -1152,7 +1161,7 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            padding: 40px;
+            padding: clamp(25px, 4vw, 40px);
             transition: all 0.4s ease;
         }
 
@@ -1162,18 +1171,18 @@
 
         .project-tags {
             display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: clamp(8px, 1.2vw, 12px);
+            margin-bottom: clamp(12px, 2vw, 20px);
             flex-wrap: wrap;
         }
 
         .project-tag {
-            padding: 8px 18px;
+            padding: clamp(6px, 1vw, 8px) clamp(12px, 2vw, 18px);
             background: rgba(0, 240, 255, 0.1);
             border: 1px solid rgba(0, 240, 255, 0.3);
             border-radius: 25px;
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.75rem;
+            font-size: clamp(0.65rem, 1.2vw, 0.75rem);
             font-weight: 600;
             letter-spacing: 0.1em;
             color: var(--primary);
@@ -1182,15 +1191,15 @@
 
         .project-title {
             font-family: 'Syne', sans-serif;
-            font-size: 1.8rem;
+            font-size: clamp(1.3rem, 2.5vw, 1.8rem);
             font-weight: 700;
             color: #fff;
-            margin-bottom: 15px;
+            margin-bottom: clamp(10px, 1.5vw, 15px);
         }
 
         .project-description {
             color: rgba(255, 255, 255, 0.7);
-            font-size: 1rem;
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
             line-height: 1.7;
         }
 
@@ -1225,7 +1234,7 @@
         .timeline::before {
             content: '';
             position: absolute;
-            left: 50%;
+            left: clamp(10px, 5vw, 50%);
             transform: translateX(-50%);
             width: 2px;
             height: 100%;
@@ -1238,7 +1247,7 @@
             justify-content: flex-end;
             padding-right: 50%;
             position: relative;
-            margin-bottom: 80px;
+            margin-bottom: clamp(40px, 8vw, 80px);
         }
 
         .timeline-item:nth-child(even) {
@@ -1250,9 +1259,9 @@
         .timeline-content {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 25px;
-            padding: 40px;
-            max-width: 450px;
+            border-radius: clamp(20px, 2.5vw, 25px);
+            padding: clamp(25px, 4vw, 40px);
+            max-width: min(450px, calc(50% - 30px));
             position: relative;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
@@ -1265,9 +1274,9 @@
 
         .timeline-dot {
             position: absolute;
-            top: 45px;
-            width: 24px;
-            height: 24px;
+            top: clamp(25px, 4vw, 45px);
+            width: clamp(18px, 2.5vw, 24px);
+            height: clamp(18px, 2.5vw, 24px);
             background: var(--primary);
             border-radius: 50%;
             box-shadow: 0 0 30px var(--primary);
@@ -1286,31 +1295,32 @@
 
         .timeline-date {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 0.85rem;
+            font-size: clamp(0.75rem, 1.3vw, 0.85rem);
             font-weight: 600;
             letter-spacing: 0.15em;
             color: var(--secondary);
-            margin-bottom: 15px;
+            margin-bottom: clamp(10px, 1.5vw, 15px);
         }
 
         .timeline-title {
             font-family: 'Syne', sans-serif;
-            font-size: 1.4rem;
+            font-size: clamp(1.1rem, 2vw, 1.4rem);
             font-weight: 700;
             color: var(--primary);
-            margin-bottom: 10px;
+            margin-bottom: clamp(8px, 1vw, 10px);
         }
 
         .timeline-company {
             font-family: 'Space Grotesk', sans-serif;
             color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 20px;
-            font-size: 0.95rem;
+            margin-bottom: clamp(15px, 2vw, 20px);
+            font-size: clamp(0.85rem, 1.4vw, 0.95rem);
         }
 
         .timeline-description {
             color: rgba(255, 255, 255, 0.7);
             line-height: 1.8;
+            font-size: clamp(0.85rem, 1.3vw, 0.95rem);
         }
 
         /* Contact Section */
@@ -1320,37 +1330,37 @@
         }
 
         .contact-content {
-            max-width: 900px;
+            max-width: min(900px, 95vw);
             margin: 0 auto;
         }
 
         .contact-text {
-            font-size: 1.2rem;
+            font-size: clamp(1rem, 1.8vw, 1.2rem);
             color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 60px;
+            margin-bottom: clamp(30px, 6vw, 60px);
             line-height: 1.9;
         }
 
         .contact-links {
             display: flex;
             justify-content: center;
-            gap: 30px;
+            gap: clamp(15px, 3vw, 30px);
             flex-wrap: wrap;
-            margin-bottom: 60px;
+            margin-bottom: clamp(30px, 6vw, 60px);
         }
 
         .contact-link {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 25px 45px;
+            gap: clamp(10px, 1.5vw, 15px);
+            padding: clamp(18px, 3vw, 25px) clamp(25px, 4vw, 45px);
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
+            border-radius: clamp(15px, 2vw, 20px);
             text-decoration: none;
             color: #fff;
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 1rem;
+            font-size: clamp(0.85rem, 1.5vw, 1rem);
             font-weight: 500;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
@@ -1363,30 +1373,30 @@
         }
 
         .contact-link svg {
-            width: 28px;
-            height: 28px;
+            width: clamp(22px, 3vw, 28px);
+            height: clamp(22px, 3vw, 28px);
             fill: var(--primary);
         }
 
         .contact-form {
-            max-width: 700px;
+            max-width: min(700px, 95vw);
             margin: 0 auto;
         }
 
         .form-group {
-            margin-bottom: 30px;
+            margin-bottom: clamp(20px, 3vw, 30px);
         }
 
         .form-group input,
         .form-group textarea {
             width: 100%;
-            padding: 22px 30px;
+            padding: clamp(16px, 2.5vw, 22px) clamp(20px, 3vw, 30px);
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 18px;
+            border-radius: clamp(14px, 2vw, 18px);
             color: #fff;
             font-family: 'Inter', sans-serif;
-            font-size: 1rem;
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
             transition: all 0.3s ease;
         }
 
@@ -1398,7 +1408,7 @@
         }
 
         .form-group textarea {
-            min-height: 180px;
+            min-height: clamp(120px, 20vw, 180px);
             resize: vertical;
         }
 
@@ -1409,7 +1419,7 @@
 
         /* Footer */
         footer {
-            padding: 60px;
+            padding: clamp(30px, 5vw, 60px);
             background: var(--dark);
             border-top: 1px solid rgba(255, 255, 255, 0.05);
             text-align: center;
@@ -1421,11 +1431,13 @@
             align-items: center;
             max-width: 1400px;
             margin: 0 auto;
+            flex-wrap: wrap;
+            gap: clamp(15px, 3vw, 30px);
         }
 
         .footer-logo {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.5rem;
+            font-size: clamp(1.2rem, 2.5vw, 1.5rem);
             font-weight: 700;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
@@ -1434,12 +1446,12 @@
 
         .footer-social {
             display: flex;
-            gap: 20px;
+            gap: clamp(12px, 2vw, 20px);
         }
 
         .footer-social a {
-            width: 50px;
-            height: 50px;
+            width: clamp(40px, 5vw, 50px);
+            height: clamp(40px, 5vw, 50px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -1456,15 +1468,15 @@
         }
 
         .footer-social a svg {
-            width: 22px;
-            height: 22px;
+            width: clamp(18px, 2.5vw, 22px);
+            height: clamp(18px, 2.5vw, 22px);
             fill: currentColor;
         }
 
         .footer-text {
             color: rgba(255, 255, 255, 0.4);
-            font-size: 0.9rem;
-            margin-top: 30px;
+            font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+            margin-top: clamp(20px, 3vw, 30px);
         }
 
         /* Scroll Reveal Animations */
@@ -1513,20 +1525,10 @@
         }
 
         /* Responsive */
-        @media (max-width: 1200px) {
-            .expertise-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .skills-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
         @media (max-width: 1024px) {
             .about-content {
                 grid-template-columns: 1fr;
-                gap: 60px;
+                gap: clamp(40px, 8vw, 60px);
             }
             
             .about-image {
@@ -1539,7 +1541,7 @@
 
             .timeline-item,
             .timeline-item:nth-child(even) {
-                padding-left: 60px;
+                padding-left: 50px;
                 padding-right: 0;
                 justify-content: flex-start;
             }
@@ -1554,7 +1556,7 @@
 
         @media (max-width: 768px) {
             nav {
-                padding: 20px 25px;
+                padding: 15px 25px;
             }
 
             .nav-links {
@@ -1569,10 +1571,15 @@
                 justify-content: center;
                 align-items: center;
                 transition: right 0.4s ease;
+                gap: clamp(20px, 5vw, 35px);
             }
 
             .nav-links.active {
                 right: 0;
+            }
+
+            .nav-links a {
+                font-size: 1rem;
             }
 
             .menu-toggle {
@@ -1591,28 +1598,55 @@
                 transform: rotate(-45deg) translate(7px, -6px);
             }
 
-            section {
-                padding: 100px 25px;
-            }
-
             .expertise-grid,
-            .skills-grid,
             .projects-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .timeline-content {
+                max-width: 100%;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                gap: clamp(20px, 4vw, 30px);
+            }
+
+            .contact-links {
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+            }
+
+            .contact-link {
+                width: 100%;
+                max-width: 400px;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-3d-card {
+                width: 180px;
+                height: 240px;
             }
 
             .about-stats {
                 grid-template-columns: 1fr;
             }
 
-            .footer-content {
-                flex-direction: column;
-                gap: 30px;
+            .orb {
+                filter: blur(60px);
             }
 
-            .contact-links {
-                flex-direction: column;
-                align-items: center;
+            .shape {
+                display: none;
+            }
+        }
+
+        @media (min-width: 2000px) {
+            section {
+                max-width: 1800px;
             }
         }
     </style>
