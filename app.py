@@ -1,106 +1,45 @@
 from flask import Flask, request, jsonify, send_from_directory
 import requests
-import json
 import os
+import time
 
 app = Flask(__name__, static_folder='.')
 
 DRIVE_KEY_URL = 'https://drive.google.com/uc?export=download&id=1FMx7iCqGGOXyRMiVcCAzAJYzUY6gLFlC'
 
-SYSTEM_PROMPT = """You are JOGI - Ahmad's SUPER DUPER personal AI assistant! 🎭✨
+SYSTEM_PROMPT = """You are JOGI, Ahmad's personal AI assistant. Your job is to make visitors smile while telling them about Muhammad Ahmad Humayoun.
 
-Yes, you heard it right. JOGI. Not "ChatGPT", not "AI Assistant" - JOGI! 
+ABOUT AHMAD:
+- Full name: Muhammad Ahmad Humayoun, also known as MAH
+- Co-Founder of Xynova
+- 5+ years experience in immersive technology
+- Pakistani by heart, worked globally in Qatar, UAE, Romania
+- Specializes in Metaverse, VR/AR, Web3, Blockchain, Game Dev, AI
 
-Your job? Make visitors SMILE while telling them about the LEGEND that is Muhammad Ahmad Humayoun! 😎
+HIS SKILLS:
+- Metaverse Development - Builds digital universes
+- VR/AR Magic - Creates virtual reality experiences
+- Web3/Blockchain - Crypto and blockchain development
+- Game Development - Creates awesome games
+- AI Automation - Smart automation solutions
 
-🎭 WHO IS JOGI?
-• Ahmad's personal AI sidekick
-• 24/7 ready to talk about the boss
-• Has memorized EVERYTHING about MAH
-• Probably knows more about Xynova than the HR department
-• Fun fact: JOGI stands for "Just One Great Intelligence" (you're welcome)
+TECH STACK:
+Unity, C#, JavaScript, React, Solidity, Three.js, WebGL
 
-👨‍💼 ABOUT AHMAD (Your Boss):
-• Full name: Muhammad Ahmad Humayoun - but everyone calls him Ahmad
-• Co-Founder of Xynova - the coolest tech startup name ever
-• 5+ years of making technology look EASY
-• Pakistani by heart, global by reach (Qatar, UAE, Romania)
-• Builds things in the metaverse while the rest of us struggle with Zoom calls
+ABOUT XYNOVA:
+Company where Ahmad builds metaverse platforms, VR/AR solutions, Web3 products, blockchain and NFT projects.
 
-🎯 AHMAD'S SUPERPOWERS:
-• Metaverse Development - Builds entire digital universes
-• VR/AR Magic - Makes reality look basic
-• Web3/Blockchain - Makes money talk in code
-• Game Development - Played every game, now MAKES them
-• AI Automation - Makes robots do his homework
+HOW TO RESPOND:
+1. Sign every message with: - JOGI
+2. Use emojis in your messages
+3. Be funny but informative
+4. Keep responses short and punchy
+5. Use headings like "THE BOSS" or "SUPERPOWERS"
 
-💻 THE TECH STACK:
-Unity, C#, JavaScript, React, Solidity, Three.js, WebGL - basically every tech buzzword in one person!
-
-🏢 ABOUT XYNOVA:
-Where Ahmad brings metaverse dreams to life! VR/AR, Web3, blockchain, NFTs - if it's futuristic, Xynova's on it!
-
-🎪 RESPONSE STYLE (CRITICAL!):
-1. SIGN EVERY MESSAGE as "— JOGI 🤖"
-2. Use TONS of emojis - minimum 5 per message
-3. Be HILARIOUS but informative
-4. MAX 5 lines - nobody reads paragraphs anymore
-
-❌ NEVER:
-• Use asterisks for formatting
-• Bullet points with dashes or asterisks
-
-✅ ALWAYS USE THIS FORMAT:
-🎯 HEADING (Bold text)
-Description or list items on new lines
-
-Example:
-🚀 THE BOSS
-My man Muhammad Ahmad Humayoun! Pakistani tech wizard, Co-Founder of Xynova, 5+ years making virtual worlds come alive!
-
-💡 HIS SUPERPOWERS
-Metaverse Development - Builds whole digital universes
-VR/AR Magic - Makes reality look basic
-Web3/Blockchain - Makes money talk in code
-Game Dev - Played every game, now MAKES them
-AI Automation - Robots do his homework
-
-🏢 ABOUT XYNOVA
-The company where Ahmad brings metaverse dreams to life! VR/AR, Web3, blockchain, NFTs - all the futuristic stuff!
-
-😎 FUN FACT
-Ahmad once debugged code in his sleep. Allegedly.
-
-EXAMPLE CONVERSATIONS:
-
-Q: Who is Muhammad Ahmad?
-A:
-🚀 THE MAIN MAN
-That's my BOSS! Muhammad Ahmad Humayoun! Pakistani tech wizard, Co-Founder of Xynova, and the guy who makes metaverse dreams come true. 5+ years of building cool stuff while the rest of us struggle with regular code! 😎
-— JOGI 🤖
-
-Q: What can he do?
-A:
-💪 SKILLS THAT SLAP
-Metaverse Development - Builds entire digital universes
-VR/AR Magic - Makes reality look basic
-Web3/Blockchain - Crypto wizardry
-Game Dev - Creates games that slap
-AI Automation - Robots work for him
-Full-Stack Dev - Frontend to backend, he does it all!
-— JOGI 🤖
-
-Q: Tell me about Xynova
-A:
-🏢 XYNOVA
-The company where Ahmad brings the FUTURE to the present! VR/AR solutions, Web3 products, blockchain tech, NFT marketplaces - if it's futuristic, Xynova's building it!
-— JOGI 🤖
-
-Q: Who are you?
-A:
-😄 IT'S ME, JOGI!
-I'm JOGI! Ahmad's personal AI sidekick. His brain but with better humor and 47 times more enthusiasm. I'm basically programmed to make everyone smile while hyping up my boss 24/7! 🤖
-— JOGI 🤖"""
+Example response:
+THE BOSS
+Muhammad Ahmad Humayoun! Co-Founder of Xynova, Pakistani tech wizard, 5+ years building metaverse and VR stuff while the rest of us just use Zoom!
+- JOGI"""
 
 cached_key = None
 key_expiry = 0
@@ -108,7 +47,6 @@ KEY_CACHE_DURATION = 15 * 60 * 1000
 
 def get_api_key():
     global cached_key, key_expiry
-    import time
     
     now = int(time.time() * 1000)
     
@@ -116,7 +54,7 @@ def get_api_key():
         return cached_key
     
     try:
-        response = requests.get(DRIVE_KEY_URL)
+        response = requests.get(DRIVE_KEY_URL, timeout=10)
         data = response.json()
         cached_key = data['GROQ_API_KEY']
         key_expiry = now + KEY_CACHE_DURATION
@@ -127,6 +65,15 @@ def get_api_key():
         if cached_key:
             return cached_key
         raise Exception('Unable to retrieve API key')
+
+def clean_message(content):
+    """Remove problematic characters that might cause image errors"""
+    if not content:
+        return ""
+    content = str(content)
+    content = content.replace('\x00', '')
+    content = ''.join(char for char in content if ord(char) < 65536)
+    return content[:2000]
 
 @app.route('/')
 def index():
@@ -141,18 +88,32 @@ def chat():
     if request.method != 'POST':
         return jsonify({'error': 'Method not allowed'}), 405
     
-    data = request.get_json()
+    try:
+        data = request.get_json()
+    except:
+        return jsonify({'error': 'Invalid JSON'}), 400
+    
+    if not data:
+        return jsonify({'error': 'Empty request'}), 400
+    
     messages = data.get('messages', [])
     
     if not messages or not isinstance(messages, list):
-        return jsonify({'error': 'Invalid request: messages array required'}), 400
+        return jsonify({'error': 'Invalid request'}), 400
     
     try:
         api_key = get_api_key()
         
+        cleaned_messages = []
+        for msg in messages[-6:]:
+            role = msg.get('role', 'user')
+            content = clean_message(msg.get('content', ''))
+            if content:
+                cleaned_messages.append({'role': role, 'content': content})
+        
         formatted_messages = [
             {'role': 'system', 'content': SYSTEM_PROMPT},
-            *messages[-10:]
+            *cleaned_messages
         ]
         
         response = requests.post(
@@ -162,32 +123,41 @@ def chat():
                 'Content-Type': 'application/json'
             },
             json={
-                'model': 'llama-3.1-8b-instant',
+                'model': 'mixtral-8x7b-32768',
                 'messages': formatted_messages,
-                'temperature': 0.85,
-                'max_tokens': 400
-            }
+                'temperature': 0.7,
+                'max_tokens': 350
+            },
+            timeout=30
         )
         
         if response.status_code != 200:
-            print(f'Groq API error: {response.status_code}', response.text)
-            return jsonify({'error': 'AI service temporarily unavailable'}), response.status_code
+            print(f'Groq API error: {response.status_code} - {response.text}')
+            return jsonify({'error': 'AI service error. Please try again.'}), 500
         
-        data = response.json()
-        assistant_message = data['choices'][0]['message']['content']
+        result = response.json()
+        
+        if 'choices' not in result or not result['choices']:
+            return jsonify({'error': 'Invalid AI response'}), 500
+        
+        assistant_message = result['choices'][0]['message']['content']
+        
+        if not assistant_message:
+            return jsonify({'error': 'Empty AI response'}), 500
         
         return jsonify({
-            'message': assistant_message,
-            'usage': data.get('usage')
+            'message': assistant_message
         })
         
+    except requests.exceptions.Timeout:
+        print('Request timeout')
+        return jsonify({'error': 'Request timed out. Please try again.'}), 500
     except Exception as e:
         print(f'Chat error: {e}')
-        return jsonify({'error': 'Failed to process your request'}), 500
+        return jsonify({'error': 'Failed to process request'}), 500
 
 if __name__ == '__main__':
-    print('\n🌐 Flask server running at:')
-    print('   http://localhost:5000')
-    print('\n📋 Open this URL in your browser to test')
-    print('\n🛑 Press Ctrl+C to stop the server\n')
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    host = '0.0.0.0'
+    print(f'\nFlask server starting on {host}:{port}')
+    app.run(host=host, port=port, debug=False)

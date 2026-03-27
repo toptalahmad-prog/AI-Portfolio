@@ -9,57 +9,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --primary: #00f0ff;
-            --secondary: #ff00ff;
-            --tertiary: #00ff88;
-            --dark: #050505;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--dark);
-            min-height: 100vh;
-            overflow: hidden;
-            color: #fff;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        .bg-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0;
-        }
-        .floating-shape {
-            position: absolute; border-radius: 50%; opacity: 0.6; animation: floatAround 20s ease-in-out infinite; pointer-events: none;
-        }
+        :root { --primary: #00f0ff; --secondary: #ff00ff; --tertiary: #00ff88; --dark: #050505; }
+        body { font-family: 'Inter', sans-serif; background: var(--dark); min-height: 100vh; overflow: hidden; color: #fff; user-select: none; }
+        .bg-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0; }
+        .floating-shape { position: absolute; border-radius: 50%; opacity: 0.6; animation: floatAround 20s ease-in-out infinite; pointer-events: none; }
         .shape-1 { width: 300px; height: 300px; background: radial-gradient(circle, rgba(0, 240, 255, 0.3), transparent 70%); top: -100px; left: -100px; animation-duration: 25s; }
         .shape-2 { width: 250px; height: 250px; background: radial-gradient(circle, rgba(255, 0, 255, 0.3), transparent 70%); bottom: -80px; right: -80px; animation-duration: 20s; animation-delay: -5s; }
         .shape-3 { width: 200px; height: 200px; background: radial-gradient(circle, rgba(0, 255, 136, 0.2), transparent 70%); top: 50%; right: 10%; animation-duration: 18s; animation-delay: -10s; }
         .shape-4 { width: 150px; height: 150px; background: radial-gradient(circle, rgba(255, 255, 0, 0.15), transparent 70%); bottom: 20%; left: 5%; animation-duration: 22s; animation-delay: -8s; }
-        @keyframes floatAround {
-            0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
-            25% { transform: translate(50px, -30px) rotate(90deg) scale(1.1); }
-            50% { transform: translate(-30px, 50px) rotate(180deg) scale(0.9); }
-            75% { transform: translate(40px, 30px) rotate(270deg) scale(1.05); }
-        }
+        @keyframes floatAround { 0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); } 25% { transform: translate(50px, -30px) rotate(90deg) scale(1.1); } 50% { transform: translate(-30px, 50px) rotate(180deg) scale(0.9); } 75% { transform: translate(40px, 30px) rotate(270deg) scale(1.05); } }
         .particles { position: fixed; width: 100%; height: 100%; pointer-events: none; }
         .particle { position: absolute; border-radius: 50%; animation: particleFloat 10s ease-in-out infinite; }
-        @keyframes particleFloat {
-            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
-            50% { transform: translateY(-100px) rotate(180deg); opacity: 0.8; }
-        }
-        .floating-icons {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;
-        }
-        .floating-icon {
-            position: absolute; font-size: 2.5rem; cursor: grab; user-select: none; -webkit-user-select: none;
-            transition: transform 0.1s ease, left 1.5s ease, top 1.5s ease, right 1.5s ease, bottom 1.5s ease;
-            filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.3)); pointer-events: auto; -webkit-touch-callout: none;
-        }
+        @keyframes particleFloat { 0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; } 50% { transform: translateY(-100px) rotate(180deg); opacity: 0.8; } }
+        .floating-icons { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .floating-icon { position: absolute; font-size: 2.5rem; cursor: grab; user-select: none; -webkit-user-select: none; transition: transform 0.1s ease, left 1.5s ease, top 1.5s ease, right 1.5s ease, bottom 1.5s ease; filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.3)); pointer-events: auto; }
         .floating-icon:hover { transform: scale(1.3); filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.6)); }
         .floating-icon.dragging { cursor: grabbing; filter: drop-shadow(0 0 30px rgba(255, 0, 255, 0.8)); z-index: 1000; animation: none !important; }
         .floating-icon.returning { transition: all 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
-        .icon-1 { top: 8%; left: 5%; } .icon-2 { top: 15%; right: 8%; } .icon-3 { bottom: 35%; left: 6%; }
-        .icon-4 { bottom: 12%; right: 6%; } .icon-5 { top: 45%; left: 4%; } .icon-6 { top: 65%; right: 4%; }
-        .icon-7 { bottom: 50%; left: 3%; } .icon-8 { top: 30%; right: 3%; }
+        .icon-1 { top: 8%; left: 5%; } .icon-2 { top: 15%; right: 8%; } .icon-3 { bottom: 35%; left: 6%; } .icon-4 { bottom: 12%; right: 6%; } .icon-5 { top: 45%; left: 4%; } .icon-6 { top: 65%; right: 4%; } .icon-7 { bottom: 50%; left: 3%; } .icon-8 { top: 30%; right: 3%; }
         @keyframes iconFloat1 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(15px, -25px); } }
         .icon-1 { animation: iconFloat1 12s ease-in-out infinite; }
         @keyframes iconFloat2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-20px, -15px); } }
@@ -76,53 +43,23 @@
         .icon-7 { animation: iconFloat7 16s ease-in-out infinite; }
         @keyframes iconFloat8 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-20px, -30px); } }
         .icon-8 { animation: iconFloat8 12s ease-in-out infinite; }
-        .grid-pattern {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-            background-size: 50px 50px; pointer-events: none; z-index: 0;
-        }
+        .grid-pattern { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px); background-size: 50px 50px; pointer-events: none; z-index: 0; }
         .main-content { position: relative; z-index: 10; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
         .header { text-align: center; margin-bottom: 30px; animation: headerSlide 1s ease-out; }
         @keyframes headerSlide { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
         .logo-container { display: inline-flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .logo-icon {
-            width: 70px; height: 70px; background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 20px; display: flex; align-items: center; justify-content: center;
-            font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--dark);
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.3); animation: logoPulse 3s ease-in-out infinite;
-        }
+        .logo-icon { width: 70px; height: 70px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--dark); box-shadow: 0 0 30px rgba(0, 240, 255, 0.3); animation: logoPulse 3s ease-in-out infinite; }
         @keyframes logoPulse { 0%, 100% { box-shadow: 0 0 30px rgba(0, 240, 255, 0.3); } 50% { box-shadow: 0 0 60px rgba(0, 240, 255, 0.6), 0 0 100px rgba(255, 0, 255, 0.3); } }
-        .logo {
-            font-family: 'Space Grotesk', sans-serif; font-size: 3rem; font-weight: 700;
-            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--tertiary)); background-size: 200% auto;
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: gradientShift 3s ease infinite;
-        }
+        .logo { font-family: 'Space Grotesk', sans-serif; font-size: 3rem; font-weight: 700; background: linear-gradient(135deg, var(--primary), var(--secondary), var(--tertiary)); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: gradientShift 3s ease infinite; }
         @keyframes gradientShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
         .subtitle { font-size: 1.1rem; color: rgba(255, 255, 255, 0.6); max-width: 500px; margin: 0 auto; }
         .subtitle span { color: var(--primary); font-weight: 500; }
-        .chatbot-container {
-            width: 100%; max-width: 500px; height: 600px;
-            background: rgba(10, 10, 15, 0.85); border-radius: 30px; display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 240, 255, 0.1), inset 0 0 100px rgba(0, 240, 255, 0.02);
-            backdrop-filter: blur(20px); animation: containerSlide 1s ease-out 0.3s backwards; position: relative;
-        }
+        .chatbot-container { width: 100%; max-width: 500px; height: 600px; background: rgba(10, 10, 15, 0.85); border-radius: 30px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 240, 255, 0.1), inset 0 0 100px rgba(0, 240, 255, 0.02); backdrop-filter: blur(20px); animation: containerSlide 1s ease-out 0.3s backwards; position: relative; }
         @keyframes containerSlide { from { opacity: 0; transform: translateY(50px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        .chatbot-container::before {
-            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
-            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--tertiary), var(--primary));
-            background-size: 400% 400%; border-radius: 32px; z-index: -1; animation: borderGlow 8s ease infinite; opacity: 0.5;
-        }
+        .chatbot-container::before { content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; background: linear-gradient(45deg, var(--primary), var(--secondary), var(--tertiary), var(--primary)); background-size: 400% 400%; border-radius: 32px; z-index: -1; animation: borderGlow 8s ease infinite; opacity: 0.5; }
         @keyframes borderGlow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-        .chatbot-header {
-            padding: 25px; background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(255, 0, 255, 0.05));
-            border-bottom: 1px solid rgba(0, 240, 255, 0.1); display: flex; align-items: center; gap: 15px;
-        }
-        .chatbot-avatar {
-            width: 55px; height: 55px; background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-family: 'Syne', sans-serif; font-weight: 700; color: var(--dark); font-size: 1.2rem;
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.4); animation: avatarPulse 2s ease-in-out infinite;
-        }
+        .chatbot-header { padding: 25px; background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(255, 0, 255, 0.05)); border-bottom: 1px solid rgba(0, 240, 255, 0.1); display: flex; align-items: center; gap: 15px; }
+        .chatbot-avatar { width: 55px; height: 55px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 700; color: var(--dark); font-size: 1.2rem; box-shadow: 0 0 30px rgba(0, 240, 255, 0.4); animation: avatarPulse 2s ease-in-out infinite; }
         @keyframes avatarPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         .chatbot-header-info h3 { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 5px; }
         .chatbot-header-info span { font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; color: var(--primary); display: flex; align-items: center; gap: 8px; }
@@ -132,7 +69,7 @@
         .chatbot-messages::-webkit-scrollbar { width: 6px; }
         .chatbot-messages::-webkit-scrollbar-track { background: transparent; }
         .chatbot-messages::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.3); border-radius: 3px; }
-        .message { max-width: 85%; padding: 15px 20px; border-radius: 20px; font-size: 0.95rem; line-height: 1.6; animation: messageIn 0.4s ease; position: relative; white-space: pre-wrap; }
+        .message { max-width: 85%; padding: 15px 20px; border-radius: 20px; font-size: 0.95rem; line-height: 1.6; animation: messageIn 0.4s ease; white-space: pre-wrap; }
         @keyframes messageIn { from { opacity: 0; transform: translateY(20px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .message.bot { background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(0, 240, 255, 0.15); border-bottom-left-radius: 5px; color: rgba(255, 255, 255, 0.95); align-self: flex-start; }
         .message.user { background: linear-gradient(135deg, var(--primary), var(--secondary)); border-bottom-right-radius: 5px; color: var(--dark); font-weight: 500; align-self: flex-end; box-shadow: 0 5px 20px rgba(0, 240, 255, 0.3); }
@@ -145,14 +82,10 @@
         @keyframes welcomeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
         .welcome-icon { font-size: 4rem; margin-bottom: 20px; animation: welcomeIconBounce 2s ease-in-out infinite; }
         @keyframes welcomeIconBounce { 0%, 100% { transform: translateY(0) rotate(-5deg); } 50% { transform: translateY(-10px) rotate(5deg); } }
-        .chatbot-welcome h4 { font-family: 'Syne', sans-serif; font-size: 1.5rem; color: #fff; margin-bottom: 15px; background: linear-gradient(135deg, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .chatbot-welcome h4 { font-family: 'Syne', sans-serif; font-size: 1.5rem; color: #fff; margin-bottom: 15px; }
         .chatbot-welcome p { color: rgba(255, 255, 255, 0.6); margin-bottom: 25px; font-size: 0.95rem; }
         .chatbot-suggestions { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-        .suggestion-btn {
-            padding: 15px 20px; background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(255, 0, 255, 0.05));
-            border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 15px; color: var(--primary);
-            font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;
-        }
+        .suggestion-btn { padding: 15px 20px; background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(255, 0, 255, 0.05)); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 15px; color: var(--primary); font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; cursor: pointer; transition: all 0.3s ease; }
         .suggestion-btn:hover { background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(255, 0, 255, 0.1)); border-color: var(--primary); transform: translateX(5px); box-shadow: 0 5px 20px rgba(0, 240, 255, 0.2); }
         .chatbot-input { padding: 20px; background: linear-gradient(180deg, rgba(0, 240, 255, 0.03), rgba(255, 0, 255, 0.02)); border-top: 1px solid rgba(0, 240, 255, 0.1); display: flex; gap: 12px; }
         .chatbot-input input { flex: 1; padding: 16px 24px; background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(0, 240, 255, 0.1); border-radius: 25px; color: #fff; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: all 0.3s ease; }
@@ -226,14 +159,8 @@
         <a href="index.html" class="back-link">Back to Portfolio</a>
     </div>
     <script>
-        // Mouse Glow Effect
         const mouseGlow = document.getElementById('mouseGlow');
-        document.addEventListener('mousemove', (e) => {
-            mouseGlow.style.left = e.clientX + 'px';
-            mouseGlow.style.top = e.clientY + 'px';
-        });
-
-        // Create Floating Particles
+        document.addEventListener('mousemove', (e) => { mouseGlow.style.left = e.clientX + 'px'; mouseGlow.style.top = e.clientY + 'px'; });
         const particlesContainer = document.getElementById('particles');
         const particleColors = ['#00f0ff', '#ff00ff', '#00ff88', '#ffff00'];
         for (let i = 0; i < 30; i++) {
@@ -248,195 +175,24 @@
             particle.style.animationDelay = (Math.random() * 5) + 's';
             particlesContainer.appendChild(particle);
         }
-
-        // Draggable Icons
         const icons = document.querySelectorAll('.floating-icon');
         let isDragging = false, currentIcon = null, offsetX = 0, offsetY = 0, velocityX = 0, velocityY = 0, lastX = 0, lastY = 0;
         document.addEventListener('contextmenu', e => e.preventDefault());
         icons.forEach(icon => { icon.addEventListener('mousedown', startDrag); icon.addEventListener('touchstart', startDrag, { passive: false }); });
-        document.addEventListener('mousemove', onDrag);
-        document.addEventListener('touchmove', onDrag, { passive: false });
-        document.addEventListener('mouseup', endDrag);
-        document.addEventListener('touchend', endDrag);
-        
-        function startDrag(e) {
-            e.preventDefault(); e.stopPropagation();
-            currentIcon = e.target.closest('.floating-icon');
-            if (!currentIcon) return;
-            isDragging = true;
-            currentIcon.classList.add('dragging');
-            currentIcon.style.animation = 'none';
-            currentIcon.style.transition = 'none';
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            const rect = currentIcon.getBoundingClientRect();
-            offsetX = clientX - rect.left;
-            offsetY = clientY - rect.top;
-            lastX = clientX; lastY = clientY;
-            velocityX = 0; velocityY = 0;
-        }
-        function onDrag(e) {
-            if (!isDragging || !currentIcon) return;
-            e.preventDefault();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            velocityX = clientX - lastX; velocityY = clientY - lastY;
-            lastX = clientX; lastY = clientY;
-            const rotation = Math.min(Math.max(velocityX * 3, -45), 45);
-            currentIcon.style.left = (clientX - offsetX) + 'px';
-            currentIcon.style.top = (clientY - offsetY) + 'px';
-            currentIcon.style.right = 'auto';
-            currentIcon.style.bottom = 'auto';
-            currentIcon.style.transform = `rotate(${rotation}deg) scale(1.4)`;
-        }
-        function endDrag(e) {
-            if (!isDragging || !currentIcon) return;
-            isDragging = false;
-            currentIcon.classList.remove('dragging');
-            const rotation = Math.min(Math.max(velocityX * 8, -60), 60);
-            currentIcon.style.transform = `rotate(${rotation}deg) scale(1.2)`;
-            setTimeout(() => returnToOriginal(currentIcon), 600);
-        }
-        function returnToOriginal(icon) {
-            icon.classList.add('returning');
-            icon.style.transition = 'all 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
-            icon.style.left = icon.dataset.originalLeft || 'auto';
-            icon.style.right = icon.dataset.originalRight || 'auto';
-            icon.style.top = icon.dataset.originalTop || 'auto';
-            icon.style.bottom = icon.dataset.originalBottom || 'auto';
-            icon.style.transform = '';
-            icon.style.animation = '';
-            setTimeout(() => { icon.classList.remove('returning'); icon.style.transition = ''; }, 1200);
-        }
-
-        // Chat functionality
-        const DRIVE_KEY_URL = 'https://drive.google.com/uc?export=download&id=1FMx7iCqGGOXyRMiVcCAzAJYzUY6gLFlC';
-        const SYSTEM_PROMPT = `You are JOGI - Ahmad's SUPER DUPER personal AI assistant! 🎭✨
-
-Your job? Make visitors SMILE while telling them about the LEGEND that is Muhammad Ahmad Humayoun! 😎
-
-👨‍💼 ABOUT AHMAD (Your Boss):
-- Full name: Muhammad Ahmad Humayoun - but everyone calls him Ahmad
-- Co-Founder of Xynova - the coolest tech startup name ever
-- 5+ years of making technology look EASY
-- Pakistani by heart, global by reach (Qatar, UAE, Romania)
-- Builds things in the metaverse while the rest of us struggle with Zoom calls
-
-🎯 AHMAD'S SUPERPOWERS:
-- Metaverse Development - Builds entire digital universes
-- VR/AR Magic - Makes reality look basic
-- Web3/Blockchain - Makes money talk in code
-- Game Development - Played every game, now MAKES them
-- AI Automation - Makes robots do his homework
-
-💻 THE TECH STACK:
-Unity, C#, JavaScript, React, Solidity, Three.js, WebGL - basically every tech buzzword in one person!
-
-🏢 ABOUT XYNOVA:
-Where Ahmad brings metaverse dreams to life! VR/AR, Web3, blockchain, NFTs - if it's futuristic, Xynova's on it!
-
-RESPONSE STYLE:
-1. SIGN EVERY MESSAGE as "— JOGI 🤖"
-2. Use TONS of emojis - minimum 5 per message
-3. Be HILARIOUS but informative
-4. MAX 5 lines
-
-FORMAT (NO asterisks, NO bullet points with dashes):
-🎯 HEADING
-Text on new lines
-
-Example:
-🚀 THE BOSS
-My man Muhammad Ahmad Humayoun! Pakistani tech wizard, Co-Founder of Xynova, 5+ years making virtual worlds come alive!
-— JOGI 🤖`;
-
-        let apiKey = null;
+        document.addEventListener('mousemove', onDrag); document.addEventListener('touchmove', onDrag, { passive: false });
+        document.addEventListener('mouseup', endDrag); document.addEventListener('touchend', endDrag);
+        function startDrag(e) { e.preventDefault(); e.stopPropagation(); currentIcon = e.target.closest('.floating-icon'); if (!currentIcon) return; isDragging = true; currentIcon.classList.add('dragging'); currentIcon.style.animation = 'none'; currentIcon.style.transition = 'none'; const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; const rect = currentIcon.getBoundingClientRect(); offsetX = clientX - rect.left; offsetY = clientY - rect.top; lastX = clientX; lastY = clientY; }
+        function onDrag(e) { if (!isDragging || !currentIcon) return; e.preventDefault(); const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; velocityX = clientX - lastX; velocityY = clientY - lastY; lastX = clientX; lastY = clientY; const rotation = Math.min(Math.max(velocityX * 3, -45), 45); currentIcon.style.left = (clientX - offsetX) + 'px'; currentIcon.style.top = (clientY - offsetY) + 'px'; currentIcon.style.right = 'auto'; currentIcon.style.bottom = 'auto'; currentIcon.style.transform = `rotate(${rotation}deg) scale(1.4)`; }
+        function endDrag(e) { if (!isDragging || !currentIcon) return; isDragging = false; currentIcon.classList.remove('dragging'); const rotation = Math.min(Math.max(velocityX * 8, -60), 60); currentIcon.style.transform = `rotate(${rotation}deg) scale(1.2)`; setTimeout(() => returnToOriginal(currentIcon), 600); }
+        function returnToOriginal(icon) { icon.classList.add('returning'); icon.style.transition = 'all 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55)'; icon.style.left = icon.dataset.originalLeft || 'auto'; icon.style.right = icon.dataset.originalRight || 'auto'; icon.style.top = icon.dataset.originalTop || 'auto'; icon.style.bottom = icon.dataset.originalBottom || 'auto'; icon.style.transform = ''; icon.style.animation = ''; setTimeout(() => { icon.classList.remove('returning'); icon.style.transition = ''; }, 1200); }
         let chatHistory = [];
-
-        async function getApiKey() {
-            if (apiKey) return apiKey;
-            try {
-                const response = await fetch(DRIVE_KEY_URL);
-                const data = await response.json();
-                apiKey = data.GROQ_API_KEY;
-                return apiKey;
-            } catch (error) {
-                console.error('Failed to get API key:', error);
-                throw new Error('Could not load API key');
-            }
-        }
-
-        function addMessage(content, type) {
-            const chatbotMessages = document.getElementById('chatbotMessages');
-            const welcome = document.querySelector('.chatbot-welcome');
-            if (welcome) { welcome.style.animation = 'fadeOut 0.3s ease forwards'; setTimeout(() => welcome.remove(), 300); }
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'message ' + type;
-            msgDiv.textContent = content;
-            chatbotMessages.appendChild(msgDiv);
-            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
-        }
-
-        function showTyping() {
-            const chatbotMessages = document.getElementById('chatbotMessages');
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'message bot typing';
-            typingDiv.id = 'typingIndicator';
-            typingDiv.innerHTML = '<span></span><span></span><span></span>';
-            chatbotMessages.appendChild(typingDiv);
-            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
-        }
-
-        function hideTyping() {
-            const typing = document.getElementById('typingIndicator');
-            if (typing) typing.remove();
-        }
-
-        function sendSuggestion(msg) {
-            document.getElementById('chatInput').value = msg;
-            sendMessage();
-        }
-
-        function handleEnter(event) {
-            if (event.key === 'Enter') sendMessage();
-        }
-
-        async function sendMessage() {
-            const chatInput = document.getElementById('chatInput');
-            const message = chatInput.value.trim();
-            if (!message) return;
-            chatInput.value = '';
-            addMessage(message, 'user');
-            chatHistory.push({ role: 'user', content: message });
-            showTyping();
-
-            try {
-                const key = await getApiKey();
-                const formattedMessages = [{ role: 'system', content: SYSTEM_PROMPT }, ...chatHistory.slice(-10)];
-                
-                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ model: 'llama-3.1-8b-instant', messages: formattedMessages, temperature: 0.85, max_tokens: 400 })
-                });
-
-                hideTyping();
-                if (!response.ok) {
-                    addMessage('Oops! My circuits are glitching! 😅 Try again in a sec! — JOGI 🤖', 'bot');
-                    return;
-                }
-                const data = await response.json();
-                addMessage(data.choices[0].message.content, 'bot');
-                chatHistory.push({ role: 'assistant', content: data.choices[0].message.content });
-            } catch (error) {
-                hideTyping();
-                addMessage('Whoops! My WiFi is lagging! 📶 Give it another shot! — JOGI 🤖', 'bot');
-            }
-        }
-
-        const style = document.createElement('style');
-        style.textContent = `@keyframes fadeOut { to { opacity: 0; transform: scale(0.9); } }`;
-        document.head.appendChild(style);
+        function addMessage(content, type) { const chatbotMessages = document.getElementById('chatbotMessages'); const welcome = document.querySelector('.chatbot-welcome'); if (welcome) { welcome.style.animation = 'fadeOut 0.3s ease forwards'; setTimeout(() => welcome.remove(), 300); } const msgDiv = document.createElement('div'); msgDiv.className = 'message ' + type; msgDiv.textContent = content; chatbotMessages.appendChild(msgDiv); chatbotMessages.scrollTop = chatbotMessages.scrollHeight; }
+        function showTyping() { const chatbotMessages = document.getElementById('chatbotMessages'); const typingDiv = document.createElement('div'); typingDiv.className = 'message bot typing'; typingDiv.id = 'typingIndicator'; typingDiv.innerHTML = '<span></span><span></span><span></span>'; chatbotMessages.appendChild(typingDiv); chatbotMessages.scrollTop = chatbotMessages.scrollHeight; }
+        function hideTyping() { const typing = document.getElementById('typingIndicator'); if (typing) typing.remove(); }
+        function sendSuggestion(msg) { document.getElementById('chatInput').value = msg; sendMessage(); }
+        function handleEnter(event) { if (event.key === 'Enter') sendMessage(); }
+        async function sendMessage() { const chatInput = document.getElementById('chatInput'); const message = chatInput.value.trim(); if (!message) return; chatInput.value = ''; addMessage(message, 'user'); chatHistory.push({ role: 'user', content: message }); showTyping(); try { const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: chatHistory }) }); hideTyping(); if (!response.ok) { addMessage('Oops! Something went wrong! 😅 Try again! - JOGI', 'bot'); return; } const data = await response.json(); addMessage(data.message, 'bot'); chatHistory.push({ role: 'assistant', content: data.message }); } catch (error) { hideTyping(); addMessage('Connection issue! 📶 Try again! - JOGI', 'bot'); } }
+        const style = document.createElement('style'); style.textContent = '@keyframes fadeOut { to { opacity: 0; transform: scale(0.9); } }'; document.head.appendChild(style);
     </script>
 </body>
 </html>

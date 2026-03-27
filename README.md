@@ -7,7 +7,7 @@ A stunning neon-themed AI-powered portfolio with embedded chatbot that answers q
 - Modern neon design with cyan/magenta theme
 - 3D animated elements and particle effects
 - Custom cursor with trail effect
-- **AI Chatbot** - Ask questions about Muhammad Ahmad Humayoun
+- **JOGI AI Chatbot** - Ask questions about Muhammad Ahmad Humayoun
 - Fully responsive design
 
 ## How It Works
@@ -33,43 +33,20 @@ python app.py
 ### 3. Open in Browser
 
 - **http://localhost:5000** - Main portfolio
-- **http://localhost:5000/chatbot.html** - Standalone chatbot
+- **http://localhost:5000/chatbot.html** - JOGI Chatbot
 
 ---
 
 ## Deployment Guide
 
-### Option 1: GitHub Pages (Chatbot Included!)
-
-This version works on GitHub Pages! The chatbot uses client-side JavaScript to call Groq API directly.
-
-1. Push code to GitHub
-2. Go to Settings → Pages
-3. Select "Deploy from a branch" → main
-4. Done! Both portfolio and chatbot work!
-
-**Note:** API key is fetched from Google Drive at runtime.
-
-### Option 2: Railway (Better Performance)
-
-For faster responses, deploy to Railway:
-
-1. Go to [railway.app](https://railway.app)
-2. Deploy from GitHub repo
-3. Railway auto-detects Flask
-4. Done!
-
----
-
-## Deployment Guide
+### Deploy to Railway (Recommended)
 
 1. Go to [railway.app](https://railway.app)
 2. Sign up with GitHub
 3. Create new project → "Deploy from GitHub repo"
 4. Select your repository
 5. Railway auto-detects Python/Flask
-6. Add environment variable: `PORT=80`
-7. Deploy!
+6. Deploy!
 
 ### Deploy to Render
 
@@ -81,22 +58,13 @@ For faster responses, deploy to Railway:
    - **Start Command:** `gunicorn app:app`
 5. Deploy!
 
-### Deploy to PythonAnywhere
-
-1. Go to [pythonanywhere.com](https://pythonanywhere.com)
-2. Open Bash console
-3. `git clone your-repo`
-4. `pip install -r requirements.txt`
-5. Web tab → Add new app → Flask
-6. Configure WSGI file to point to `app.py`
-
 ---
 
 ## Project Structure
 
 ```
 ├── index.html           # Main portfolio
-├── chatbot.html         # Standalone chatbot page
+├── chatbot.html         # JOGI chatbot page
 ├── app.py              # Flask server (Python)
 ├── requirements.txt    # Python dependencies
 └── README.md
