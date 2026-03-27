@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book a Meeting - Muhammad Ahmad Humayoun</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #00f0ff;
+            --secondary: #ff00ff;
+            --dark: #0a0a0f;
+            --dark-card: #12121a;
+            --text: #ffffff;
+            --text-muted: #a0a0b0;
+            --border: rgba(255, 255, 255, 0.06);
+        }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .bg-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .glow-1 {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.12) 0%, transparent 70%);
+            top: -150px;
+            left: -150px;
+            animation: floatGlow 15s ease-in-out infinite;
+        }
+        .glow-2 {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 0, 255, 0.1) 0%, transparent 70%);
+            bottom: -100px;
+            right: -100px;
+            animation: floatGlow 18s ease-in-out infinite reverse;
+        }
+        @keyframes floatGlow {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, 20px); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .booking-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .booking-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .calendar-section, .form-section {
+            background: var(--dark-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+        }
+
+        .section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Calendar */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            color: var(--text);
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .calendar-nav button {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-nav button:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .calendar-weekdays span {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            padding: 8px 0;
+        }
+
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .calendar-days button {
+            aspect-ratio: 1;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-days button:hover:not(:disabled) {
+            background: rgba(0, 240, 255, 0.1);
+            border-color: var(--primary);
+        }
+
+        .calendar-days button:disabled {
+            color: var(--text-muted);
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .calendar-days button.selected {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .calendar-days button.today {
+            border-color: var(--primary);
+        }
+
+        /* Time Slots */
+        .time-slots {
+            margin-top: 25px;
+        }
+
+        .time-slots h4 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .slot-btn {
+            padding: 12px 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .slot-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        .slot-btn:disabled {
+            color: var(--text-muted);
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .slot-btn.selected {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--dark);
+            border-color: transparent;
+            font-weight: 600;
+        }
+
+        .no-slots {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+        }
+
+        .form-group input::placeholder, .form-group textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .book-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 12px;
+            color: var(--dark);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .book-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 240, 255, 0.3);
+        }
+
+        .book-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .success-message h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .success-message p {
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .back-link {
+            display: inline-block;
+            padding: 12px 24px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover {
+            border-color: var(--primary);
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        .selected-summary {
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .selected-summary p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .selected-summary strong {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow">
+        <div class="glow-1"></div>
+        <div class="glow-2"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>📅 Book a Meeting</h1>
+            <p>Schedule a call with Muhammad Ahmad Humayoun</p>
+        </div>
+
+        <div class="booking-grid">
+            <div class="calendar-section">
+                <div class="section-title">
+                    <span>📆</span> Select Date & Time
+                </div>
+                
+                <div class="calendar-header">
+                    <h3 id="currentMonth">March 2026</h3>
+                    <div class="calendar-nav">
+                        <button onclick="changeMonth(-1)">‹</button>
+                        <button onclick="changeMonth(1)">›</button>
+                    </div>
+                </div>
+
+                <div class="calendar-weekdays">
+                    <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                </div>
+
+                <div class="calendar-days" id="calendarDays"></div>
+
+                <div class="time-slots">
+                    <h4>Available Time Slots</h4>
+                    <div class="slots-grid" id="slotsGrid">
+                        <div class="no-slots">Select a date to see available slots</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section" id="bookingForm">
+                <div class="section-title">
+                    <span>📝</span> Your Details
+                </div>
+
+                <div class="selected-summary" id="selectedSummary" style="display: none;">
+                    <p><strong>Date:</strong> <span id="summaryDate">-</span></p>
+                    <p><strong>Time:</strong> <span id="summaryTime">-</span></p>
+                </div>
+
+                <form onsubmit="submitBooking(event)">
+                    <div class="form-group">
+                        <label>Your Name *</label>
+                        <input type="text" id="name" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address *</label>
+                        <input type="email" id="email" placeholder="john@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>What would you like to discuss?</label>
+                        <textarea id="topic" placeholder="Tell me briefly about your project or inquiry..."></textarea>
+                    </div>
+                    <button type="submit" class="book-btn" id="bookBtn" disabled>Select Date & Time First</button>
+                </form>
+            </div>
+
+            <div class="form-section success-message" id="successMessage">
+                <div class="success-icon">✅</div>
+                <h3>Meeting Scheduled!</h3>
+                <p>Your meeting with Muhammad Ahmad Humayoun has been booked. You'll receive a confirmation email shortly.</p>
+                <a href="/" class="back-link">← Back to Portfolio</a>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="chatbot.html" class="back-link">💬 Or chat with JOGI first</a>
+        </div>
+    </div>
+
+    <script>
+        let currentDate = new Date();
+        let selectedDate = null;
+        let selectedTime = null;
+
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+            
+            let html = '';
+            
+            // Empty cells for days before first of month
+            for (let i = 0; i < firstDay; i++) {
+                html += '<button disabled></button>';
+            }
+            
+            // Days of month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                const isToday = date.toDateString() === today.toDateString();
+                
+                let classes = '';
+                if (isPast) classes += ' disabled';
+                if (isToday) classes += ' today';
+                if (selectedDate === dateStr) classes += ' selected';
+                
+                html += `<button type="button" class="${classes}" onclick="selectDate('${dateStr}')" ${isPast ? 'disabled' : ''}>${day}</button>`;
+            }
+            
+            document.getElementById('calendarDays').innerHTML = html;
+        }
+
+        function changeMonth(delta) {
+            currentDate.setMonth(currentDate.getMonth() + delta);
+            selectedDate = null;
+            selectedTime = null;
+            renderCalendar();
+            renderSlots();
+        }
+
+        async function selectDate(dateStr) {
+            selectedDate = dateStr;
+            selectedTime = null;
+            renderCalendar();
+            await renderSlots();
+            updateBookButton();
+        }
+
+        async function renderSlots() {
+            const grid = document.getElementById('slotsGrid');
+            
+            if (!selectedDate) {
+                grid.innerHTML = '<div class="no-slots">Select a date to see available slots</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/slots?date=${selectedDate}`);
+                const data = await response.json();
+                
+                if (data.available.length === 0) {
+                    grid.innerHTML = '<div class="no-slots">No slots available on this day</div>';
+                    return;
+                }
+                
+                grid.innerHTML = data.available.map(time => 
+                    `<button type="button" class="slot-btn ${selectedTime === time ? 'selected' : ''}" onclick="selectTime('${time}')">${time}</button>`
+                ).join('');
+            } catch (e) {
+                grid.innerHTML = '<div class="no-slots">Error loading slots</div>';
+            }
+        }
+
+        function selectTime(time) {
+            selectedTime = time;
+            renderSlots();
+            updateBookButton();
+        }
+
+        function updateBookButton() {
+            const btn = document.getElementById('bookBtn');
+            const summary = document.getElementById('selectedSummary');
+            
+            if (selectedDate && selectedTime) {
+                btn.disabled = false;
+                btn.textContent = '📅 Confirm Booking';
+                summary.style.display = 'block';
+                document.getElementById('summaryDate').textContent = selectedDate;
+                document.getElementById('summaryTime').textContent = selectedTime;
+            } else {
+                btn.disabled = true;
+                btn.textContent = 'Select Date & Time First';
+                summary.style.display = 'none';
+            }
+        }
+
+        async function submitBooking(e) {
+            e.preventDefault();
+            
+            if (!selectedDate || !selectedTime) return;
+            
+            const btn = document.getElementById('bookBtn');
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const topic = document.getElementById('topic').value.trim();
+            
+            btn.disabled = true;
+            btn.textContent = 'Booking...';
+            
+            try {
+                const response = await fetch('/api/book', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name, email, date: selectedDate, time: selectedTime, topic
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('bookingForm').style.display = 'none';
+                    document.getElementById('successMessage').classList.add('show');
+                } else {
+                    alert(data.error || 'Booking failed. Please try again.');
+                    btn.disabled = false;
+                    btn.textContent = '📅 Confirm Booking';
+                }
+            } catch (e) {
+                alert('Error booking. Please try again.');
+                btn.disabled = false;
+                btn.textContent = '📅 Confirm Booking';
+            }
+        }
+
+        renderCalendar();
+    </script>
+</body>
+</html>

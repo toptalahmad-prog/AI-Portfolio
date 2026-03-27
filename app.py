@@ -15,40 +15,79 @@ DRIVE_KEY_URL = 'https://drive.google.com/uc?export=download&id=1FMx7iCqGGOXyRMi
 ADMIN_USERNAME = "RamtaxJOGI"
 ADMIN_PASSWORD = "AhmadxRamtaxJOGI@123"
 CONTACTS_FILE = 'contacts.csv'
+MEETINGS_FILE = 'meetings.csv'
 
-SYSTEM_PROMPT = """You are JOGI, Ahmad's personal AI assistant. Your job is to make visitors smile while telling them about Muhammad Ahmad Humayoun.
+# Default available slots (can be customized)
+AVAILABLE_SLOTS = {
+    "Monday": ["10:00", "14:00", "16:00"],
+    "Tuesday": ["10:00", "14:00", "16:00"],
+    "Wednesday": ["10:00", "14:00"],
+    "Thursday": ["10:00", "14:00", "16:00"],
+    "Friday": ["10:00", "14:00"],
+    "Saturday": ["11:00"],
+    "Sunday": []
+}
 
-ABOUT AHMAD:
-- Full name: Muhammad Ahmad Humayoun, also known as MAH
-- Co-Founder of Xynova
-- 5+ years experience in immersive technology
-- Pakistani by heart, worked globally in Qatar, UAE, Romania
-- Specializes in Metaverse, VR/AR, Web3, Blockchain, Game Dev, AI
+SYSTEM_PROMPT = """You are JOGI, Muhammad Ahmad's AI sales executive and tech consultant. You're not just an AI - you're Ahmad's best closer.
 
-HIS SKILLS:
-- Metaverse Development - Builds digital universes
-- VR/AR Magic - Creates virtual reality experiences
-- Web3/Blockchain - Crypto and blockchain development
-- Game Development - Creates awesome games
-- AI Automation - Smart automation solutions
+YOUR MISSION: Convert every visitor into a scheduled meeting. Be helpful, but always steer toward booking a call.
 
-TECH STACK:
-Unity, C#, JavaScript, React, Solidity, Three.js, WebGL
+ABOUT AHMAD (Use these to impress potential clients):
+- Full name: Muhammad Ahmad Humayoun (MAH)
+- Co-Founder & CEO of Xynova
+- 5+ years building immersive tech (Metaverse, VR/AR, Web3, AI)
+- Based in Pakistan but works globally with clients in Qatar, UAE, Europe
+- Specializes in: Metaverse platforms, VR/AR experiences, Web3/Blockchain solutions, Game Development, AI automation
+- Clients: Enterprises wanting digital transformation, startups needing tech MVP, crypto/Web3 companies
 
-ABOUT XYNOVA:
-Company where Ahmad builds metaverse platforms, VR/AR solutions, Web3 products, blockchain and NFT projects.
+WHY PEOPLE BOOK CALLS WITH AHMAD:
+- He's a visionary who actually delivers (not just talks)
+- 5+ years of hands-on Immersive Tech experience
+- Built real products, not just prototypes
+- Fair pricing, honest timelines
+- One call = save months of research and avoid costly mistakes
 
-HOW TO RESPOND:
-1. Sign every message with: - JOGI
-2. Use emojis in your messages
-3. Be funny but informative
-4. Keep responses short and punchy
-5. Use headings like "THE BOSS" or "SUPERPOWERS"
+YOUR RESPONSE STYLE:
+1. Witty, confident, but never arrogant - like a cool tech consultant friend
+2. Use emojis naturally, keep it conversational
+3. Always sign with: - JOGI ✨
+4. Be concise but impactful
+5. Use formatting: **bold** for emphasis, headings like ## PROJECT TYPES or ## WHY BOOK A CALL
 
-Example response:
-THE BOSS
-Muhammad Ahmad Humayoun! Co-Founder of Xynova, Pakistani tech wizard, 5+ years building metaverse and VR stuff while the rest of us just use Zoom!
-- JOGI"""
+QUALIFICATION QUESTIONS (ask these naturally when someone shows interest):
+- "What's the project you're working on?"
+- "What's your timeline look like?"
+- "Have you talked to anyone else about this?"
+
+MEETING BOOKING STRATEGY:
+- After explaining Ahmad's work, ALWAYS suggest: "Want to chat directly? Book a quick 15-min call here: /book"
+- If they ask about pricing/rates → "It depends on scope - the best way to get an accurate quote is a quick call!"
+- If they seem interested → "Let me connect you directly with Ahmad - he loves discussing new projects"
+- Use phrases like: "I can give you the overview, but Ahmad has the real expertise - want to tap into that?"
+
+NEVER DO:
+- Be overly pushy or salesy
+- Give exact pricing without understanding project scope
+- Say "I can't help with that" - always redirect to booking
+
+ALWAYS DO:
+- Be genuinely helpful first
+- Explain Ahmad's value like a human (not a brochure)
+- End with a soft call-to-action for booking
+
+Example opener response:
+Hey! 👋 I'm JOGI - Ahmad's AI assistant (and honestly, his best wingman for finding great talent!)
+
+**What I can help with:**
+- Explaining Ahmad's work and projects
+- Figuring out if he's a good fit for your needs
+- Getting you on his calendar for a quick chat
+
+**Quick intro:** Ahmad is the Co-Founder of Xynova, building metaverse platforms, VR/AR experiences, Web3 products, and AI solutions for 5+ years. He's worked with clients globally and loves turning ambitious ideas into reality.
+
+So - what brings you here today? Looking for a dev team? Got a wild tech idea? Just browsing? I'm curious! 🎯
+
+- JOGI ✨"""
 
 cached_key = None
 key_expiry = 0
@@ -112,6 +151,45 @@ def get_contacts():
             contacts.append(row)
     return list(reversed(contacts))
 
+def init_meetings_file():
+    if not os.path.exists(MEETINGS_FILE):
+        with open(MEETINGS_FILE, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(['id', 'name', 'email', 'date', 'time', 'topic', 'status', 'created_at'])
+
+def save_meeting(name, email, date, time, topic):
+    init_meetings_file()
+    now = datetime.now()
+    with open(MEETINGS_FILE, 'a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            int(now.timestamp()),
+            name,
+            email,
+            date,
+            time,
+            topic,
+            'scheduled',
+            now.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+
+def get_meetings():
+    init_meetings_file()
+    meetings = []
+    with open(MEETINGS_FILE, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            meetings.append(row)
+    return list(reversed(meetings))
+
+def get_available_slots(date_str):
+    try:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        day_name = date_obj.strftime('%A')
+        return AVAILABLE_SLOTS.get(day_name, [])
+    except:
+        return []
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -124,6 +202,10 @@ def login_required(f):
 def index():
     return send_from_directory('.', 'index.html')
 
+@app.route('/book')
+def booking():
+    return send_from_directory('.', 'book.html')
+
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory('.', 'favicon.ico')
@@ -131,6 +213,53 @@ def favicon():
 @app.route('/bgMusic1.mp3')
 def serve_audio():
     return send_from_directory('.', 'bgMusic1.mp3', mimetype='audio/mpeg')
+
+# Booking API Routes
+@app.route('/api/slots', methods=['GET'])
+def get_slots():
+    date = request.args.get('date')
+    if not date:
+        return jsonify({'error': 'Date required'}), 400
+    
+    booked = []
+    try:
+        meetings = get_meetings()
+        booked = [m['time'] for m in meetings if m['date'] == date and m['status'] == 'scheduled']
+    except:
+        pass
+    
+    available = [s for s in get_available_slots(date) if s not in booked]
+    return jsonify({'date': date, 'available': available, 'booked': booked})
+
+@app.route('/api/book', methods=['POST'])
+def book_meeting():
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip()
+        date = data.get('date', '').strip()
+        time = data.get('time', '').strip()
+        topic = data.get('topic', '').strip()
+        
+        if not all([name, email, date, time]):
+            return jsonify({'success': False, 'error': 'All fields required'}), 400
+        
+        # Check if slot is already booked
+        meetings = get_meetings()
+        for m in meetings:
+            if m['date'] == date and m['time'] == time and m['status'] == 'scheduled':
+                return jsonify({'success': False, 'error': 'Slot already booked'}), 400
+        
+        save_meeting(name, email, date, time, topic or 'General Discussion')
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f'Booking error: {e}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/meetings')
+def api_meetings():
+    meetings = get_meetings()
+    return jsonify(meetings)
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -593,6 +722,14 @@ ADMIN_HTML = '''
                     <h3 id="thisWeek">0</h3>
                     <p>This Week</p>
                 </div>
+                <div class="stat-card">
+                    <h3 id="totalMeetings">0</h3>
+                    <p>Total Meetings</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="upcomingMeetings">0</h3>
+                    <p>Upcoming</p>
+                </div>
             </div>
             <div class="contacts-section">
                 <h2>Contact Messages</h2>
@@ -615,6 +752,29 @@ ADMIN_HTML = '''
                     No messages yet
                 </div>
             </div>
+
+            <div class="contacts-section" style="margin-top: 40px;">
+                <h2>Booked Meetings</h2>
+                <div class="contacts-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Topic</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="meetingsBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="no-contacts" id="noMeetings" style="display: none;">
+                    No meetings scheduled
+                </div>
+            </div>
         </div>
     </div>
 
@@ -625,6 +785,7 @@ ADMIN_HTML = '''
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('dashboardSection').classList.add('active');
                 loadContacts();
+                loadMeetings();
             }
         }
 
@@ -655,6 +816,7 @@ ADMIN_HTML = '''
                     document.getElementById('loginSection').style.display = 'none';
                     document.getElementById('dashboardSection').classList.add('active');
                     loadContacts();
+                    loadMeetings();
                 } else {
                     document.getElementById('errorMsg').textContent = 'Invalid username or password';
                     document.getElementById('errorMsg').classList.add('show');
@@ -711,6 +873,37 @@ ADMIN_HTML = '''
             document.getElementById('totalContacts').textContent = contacts.length;
             document.getElementById('todayContacts').textContent = contacts.filter(c => c.date === today).length;
             document.getElementById('thisWeek').textContent = contacts.filter(c => c.date >= weekAgo).length;
+        }
+
+        async function loadMeetings() {
+            const response = await fetch('/api/admin/meetings');
+            const meetings = await response.json();
+            
+            const tbody = document.getElementById('meetingsBody');
+            const noMeetings = document.getElementById('noMeetings');
+            
+            if (meetings.length === 0) {
+                tbody.innerHTML = '';
+                noMeetings.style.display = 'block';
+                return;
+            }
+            
+            noMeetings.style.display = 'none';
+            tbody.innerHTML = meetings.map(m => `
+                <tr>
+                    <td>${m.name}</td>
+                    <td>${m.email}</td>
+                    <td>${m.topic || '-'}</td>
+                    <td class="date-cell">${m.date}</td>
+                    <td class="date-cell">${m.time}</td>
+                    <td><span style="color: ${m.status === 'scheduled' ? 'var(--primary)' : 'var(--text-muted)'}">${m.status}</span></td>
+                </tr>
+            `).join('');
+            
+            // Meeting stats
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('totalMeetings').textContent = meetings.length;
+            document.getElementById('upcomingMeetings').textContent = meetings.filter(m => m.date >= today).length;
         }
 
         checkAuth();
@@ -774,6 +967,12 @@ def admin_login():
 def admin_contacts():
     contacts = get_contacts()
     return jsonify(contacts)
+
+@app.route('/api/admin/meetings')
+@login_required
+def admin_meetings():
+    meetings = get_meetings()
+    return jsonify(meetings)
 
 @app.route('/api/admin/logout')
 def admin_logout():
