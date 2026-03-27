@@ -95,16 +95,9 @@
             font-size: 1.5rem;
             font-weight: 700;
             letter-spacing: 0.3em;
-            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--primary));
-            background-size: 200% auto;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            animation: shimmer 2s linear infinite;
-        }
-
-        @keyframes shimmer {
-            0% { background-position: -200% center; }
-            100% { background-position: 200% center; }
         }
 
         .loader-bar {
@@ -121,13 +114,8 @@
             height: 100%;
             background: linear-gradient(90deg, var(--primary), var(--secondary));
             border-radius: 3px;
-            animation: loadProgress 2s ease-out forwards;
+            width: 100%;
             box-shadow: 0 0 20px var(--primary);
-        }
-
-        @keyframes loadProgress {
-            0% { width: 0%; }
-            100% { width: 100%; }
         }
 
         /* Navigation */
@@ -1033,6 +1021,13 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 25px;
             transition: all 0.4s ease;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .skill-category.animate {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .skill-category:hover {
@@ -1079,19 +1074,37 @@
         }
 
         .skill-bar {
-            height: 4px;
+            height: 12px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
+            border-radius: 6px;
             overflow: hidden;
+            position: relative;
         }
 
         .skill-progress {
             height: 100%;
             background: linear-gradient(90deg, var(--primary), var(--secondary));
-            border-radius: 4px;
+            border-radius: 6px;
             width: 0;
             transition: width 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            box-shadow: 0 0 15px var(--primary);
+            box-shadow: 0 0 20px var(--primary);
+            position: relative;
+        }
+
+        .skill-progress::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
 
         /* Projects Section */
@@ -1629,7 +1642,7 @@
             <li><a href="#experience">Experience</a></li>
             <li><a href="#projects">Projects</a></li>
             <li><a href="#contact">Contact</a></li>
-            <li><a href="chatbot.html" class="chat-nav-btn">AI Chat</a></li>
+            <li><a href="chatbot.html" class="chat-nav-btn" target="_blank">AI Chat</a></li>
         </ul>
         <div class="menu-toggle" id="menuToggle">
             <span></span>
@@ -2224,12 +2237,24 @@
 
         // Skill Bar Animation
         const skillBars = document.querySelectorAll('.skill-progress');
-        const animateSkillBars = () => {
-            skillBars.forEach(bar => {
-                const width = bar.getAttribute('data-width');
-                bar.style.width = width + '%';
+        const skillCategories = document.querySelectorAll('.skill-category');
+        
+        function animateSkillBars() {
+            // First animate categories
+            skillCategories.forEach((cat, catIndex) => {
+                setTimeout(() => {
+                    cat.classList.add('animate');
+                }, catIndex * 150);
             });
-        };
+            
+            // Then animate bars
+            skillBars.forEach((bar, index) => {
+                setTimeout(() => {
+                    const width = bar.getAttribute('data-width');
+                    bar.style.width = width + '%';
+                }, index * 80);
+            });
+        }
 
         const skillObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -2238,9 +2263,12 @@
                     skillObserver.unobserve(entry.target);
                 }
             });
-        }, { threshold: 0.3 });
+        }, { threshold: 0.1 });
 
-        document.querySelector('.skills-container').forEach(el => skillObserver.observe(el));
+        const skillsSection = document.querySelector('.skills');
+        if (skillsSection) {
+            skillObserver.observe(skillsSection);
+        }
 
         // Smooth Scroll for Navigation
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {

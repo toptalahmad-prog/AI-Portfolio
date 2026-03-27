@@ -39,7 +39,29 @@ python app.py
 
 ## Deployment Guide
 
-### Deploy to Railway (Recommended)
+### Option 1: GitHub Pages (Chatbot Included!)
+
+This version works on GitHub Pages! The chatbot uses client-side JavaScript to call Groq API directly.
+
+1. Push code to GitHub
+2. Go to Settings → Pages
+3. Select "Deploy from a branch" → main
+4. Done! Both portfolio and chatbot work!
+
+**Note:** API key is fetched from Google Drive at runtime.
+
+### Option 2: Railway (Better Performance)
+
+For faster responses, deploy to Railway:
+
+1. Go to [railway.app](https://railway.app)
+2. Deploy from GitHub repo
+3. Railway auto-detects Flask
+4. Done!
+
+---
+
+## Deployment Guide
 
 1. Go to [railway.app](https://railway.app)
 2. Sign up with GitHub
