@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00f5ff"/>
+      <stop offset="100%" style="stop-color:#ff00ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="10" fill="#0a0a0f"/>
+  <polygon points="32,6 58,20 58,44 32,58 6,44 6,20" fill="none" stroke="url(#grad)" stroke-width="2.5" filter="url(#glow)"/>
+  <text x="32" y="40" text-anchor="middle" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" fill="url(#grad)" filter="url(#glow)">M</text>
+</svg>
