@@ -1702,6 +1702,162 @@
                 display: none;
             }
         }
+        
+        /* Voice Command Button */
+        .voice-cmd-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 9999;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 25px rgba(0, 240, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .voice-cmd-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 35px rgba(0, 240, 255, 0.45);
+        }
+        
+        .voice-cmd-btn.listening {
+            background: linear-gradient(135deg, #ff0064, #ff00ff);
+            animation: voicePulse 1s infinite;
+        }
+        
+        @keyframes voicePulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 6px 25px rgba(255, 0, 100, 0.4); }
+            50% { transform: scale(1.15); box-shadow: 0 10px 40px rgba(255, 0, 100, 0.6); }
+        }
+        
+        .voice-cmd-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--dark);
+        }
+        
+        .voice-toast {
+            position: fixed;
+            bottom: 90px;
+            left: 20px;
+            background: var(--dark-card);
+            border: 1px solid var(--border-accent);
+            border-radius: 12px;
+            padding: 14px 20px;
+            color: var(--text);
+            font-size: 0.9rem;
+            z-index: 9999;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            max-width: 280px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .voice-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .voice-toast strong {
+            color: var(--primary);
+        }
+        
+        .voice-input-panel {
+            position: fixed;
+            bottom: 90px;
+            left: 20px;
+            background: var(--dark-card);
+            border: 1px solid var(--border-accent);
+            border-radius: 16px;
+            padding: 16px;
+            z-index: 9999;
+            display: none;
+            width: 280px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .voice-input-panel.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .voice-input-panel h4 {
+            color: var(--primary);
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+        
+        .voice-input-panel input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        
+        .voice-input-panel input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .voice-input-panel button {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 8px;
+            color: var(--dark);
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .voice-input-panel .hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+        
+        .voice-input-panel .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .voice-cmd-btn {
+                bottom: 80px;
+                left: 15px;
+                width: 48px;
+                height: 48px;
+            }
+            
+            .voice-toast {
+                bottom: 140px;
+                left: 15px;
+                max-width: 220px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1802,6 +1958,20 @@
         </div>
         <span class="music-toggle-btn">JOGI</span>
     </div>
+
+    <!-- Voice Command Button -->
+    <button class="voice-cmd-btn" id="voiceCmdBtn" onclick="toggleVoiceCommand()" title="Voice Commands - Click for options">
+        <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z"/></svg>
+    </button>
+    
+    <div class="voice-toast" id="voiceToast"></div>
+    
+    <div class="voice-input-panel" id="voiceInputPanel">
+        <button class="close-btn" onclick="closeVoiceInput()">×</button>
+        <h4>🎤 Type a command</h4>
+        <input type="text" id="voiceCommandInput" placeholder="Try: go to contact, book meeting...">
+        <button onclick="submitVoiceCommand()">Go</button>
+        <p class="hint">Tip: Voice needs HTTPS. Use this text input instead!</p>
     </div>
 
     <!-- Navigation -->
@@ -2695,6 +2865,193 @@
             
             return audioReactiveEnabled;
         }
+
+        // Voice Command System
+        let voiceRecognition = null;
+        let isListening = false;
+        
+        const voiceCommands = {
+            'help': showVoiceHelp,
+            'what can you do': showVoiceHelp,
+            'show commands': showVoiceHelp,
+            'go home': () => navigateTo('home'),
+            'go to home': () => navigateTo('home'),
+            'home': () => navigateTo('home'),
+            'go to about': () => navigateTo('about'),
+            'about': () => navigateTo('about'),
+            'go to expertise': () => navigateTo('expertise'),
+            'expertise': () => navigateTo('expertise'),
+            'skills': () => navigateTo('expertise'),
+            'go to projects': () => navigateTo('projects'),
+            'projects': () => navigateTo('projects'),
+            'go to experience': () => navigateTo('experience'),
+            'experience': () => navigateTo('experience'),
+            'go to contact': () => navigateTo('contact'),
+            'contact': () => navigateTo('contact'),
+            'contact form': () => navigateTo('contact'),
+            'go to booking': () => navigateTo('book'),
+            'book meeting': () => navigateTo('book'),
+            'book': () => navigateTo('book'),
+            'schedule': () => navigateTo('book'),
+            'chat': () => openChatbot(),
+            'talk to jogi': () => openChatbot(),
+            'open chatbot': () => openChatbot(),
+            'jogi': () => openChatbot(),
+            'ai chat': () => openChatbot(),
+            'play music': () => {
+                const bgMusic = document.getElementById('bgMusic');
+                if (bgMusic) bgMusic.play();
+                showVoiceToast('Playing music! 🎵');
+            },
+            'stop music': () => {
+                const bgMusic = document.getElementById('bgMusic');
+                if (bgMusic) bgMusic.pause();
+                showVoiceToast('Music paused! ⏸️');
+            },
+            'pause music': () => {
+                const bgMusic = document.getElementById('bgMusic');
+                if (bgMusic) bgMusic.pause();
+                showVoiceToast('Music paused! ⏸️');
+            },
+        };
+        
+        function showVoiceHelp() {
+            const helpText = `Available commands:
+• "Go home" / "Home"
+• "Go to about" / "About"
+• "Go to expertise" / "Skills"
+• "Go to projects" / "Projects"
+• "Go to experience" / "Experience"
+• "Go to contact" / "Contact form"
+• "Book meeting" / "Book"
+• "Chat" / "Talk to JOGI"
+• "Play music" / "Stop music"`;
+            showVoiceToast(helpText);
+        }
+        
+        function navigateTo(sectionId) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+                const names = {
+                    'home': 'Home',
+                    'about': 'About',
+                    'expertise': 'Expertise',
+                    'projects': 'Projects',
+                    'experience': 'Experience',
+                    'contact': 'Contact Form',
+                    'book': 'Booking Page'
+                };
+                showVoiceToast(`Taking you to ${names[sectionId] || sectionId}! ✨`);
+            } else if (sectionId === 'book') {
+                window.location.href = '/book';
+            }
+        }
+        
+        function openChatbot() {
+            showVoiceToast('Opening JOGI Chat! 🤖');
+            window.open('chatbot.html', '_blank');
+        }
+        
+        function showVoiceToast(message) {
+            const toast = document.getElementById('voiceToast');
+            toast.innerHTML = message.replace(/\n/g, '<br>');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 4000);
+        }
+        
+        function processVoiceCommand(command) {
+            const lowerCmd = command.toLowerCase().trim();
+            
+            for (const [key, action] of Object.entries(voiceCommands)) {
+                if (lowerCmd.includes(key)) {
+                    action();
+                    return;
+                }
+            }
+            
+            showVoiceToast(`Didn't catch that. Say "Help" for commands! 🤔`);
+        }
+        
+        function toggleVoiceCommand() {
+            // First try voice, if fails show text input
+            try {
+                if (!voiceRecognition) {
+                    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                        voiceRecognition = new SpeechRecognition();
+                        voiceRecognition.continuous = false;
+                        voiceRecognition.interimResults = false;
+                        voiceRecognition.lang = 'en-US';
+                        
+                        voiceRecognition.onstart = () => {
+                            isListening = true;
+                            document.getElementById('voiceCmdBtn').classList.add('listening');
+                            showVoiceToast('Listening... 🎤');
+                        };
+                        
+                        voiceRecognition.onend = () => {
+                            isListening = false;
+                            document.getElementById('voiceCmdBtn').classList.remove('listening');
+                        };
+                        
+                        voiceRecognition.onresult = (event) => {
+                            const transcript = event.results[0][0].transcript;
+                            showVoiceToast(`Heard: "${transcript}"`);
+                            processVoiceCommand(transcript);
+                        };
+                        
+                        voiceRecognition.onerror = (event) => {
+                            console.error('Voice recognition error:', event.error);
+                            isListening = false;
+                            document.getElementById('voiceCmdBtn').classList.remove('listening');
+                            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                                showVoiceToast('Mic blocked! Using text input instead.');
+                                openVoiceInputPanel();
+                            } else if (event.error !== 'no-speech') {
+                                showVoiceToast('Oops! Try again. 🔊');
+                            }
+                        };
+                    }
+                }
+                
+                if (isListening) {
+                    voiceRecognition.stop();
+                } else if (voiceRecognition) {
+                    voiceRecognition.start();
+                } else {
+                    openVoiceInputPanel();
+                }
+            } catch (e) {
+                openVoiceInputPanel();
+            }
+        }
+        
+        function openVoiceInputPanel() {
+            document.getElementById('voiceInputPanel').classList.add('show');
+            document.getElementById('voiceCommandInput').focus();
+        }
+        
+        function closeVoiceInput() {
+            document.getElementById('voiceInputPanel').classList.remove('show');
+        }
+        
+        function submitVoiceCommand() {
+            const input = document.getElementById('voiceCommandInput');
+            const cmd = input.value.trim();
+            if (cmd) {
+                processVoiceCommand(cmd);
+                input.value = '';
+                closeVoiceInput();
+            }
+        }
+        
+        // Allow Enter key in voice input
+        document.addEventListener('keypress', function(e) {
+            if (e.target.id === 'voiceCommandInput' && e.key === 'Enter') {
+                submitVoiceCommand();
+            }
+        });
     </script>
 </body>
 </html>

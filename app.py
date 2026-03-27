@@ -2,20 +2,48 @@ from flask import Flask, request, jsonify, send_from_directory, session, redirec
 import requests
 import os
 import time
-import csv
+import sqlite3
 import json
 from datetime import datetime
 from functools import wraps
 
 app = Flask(__name__, static_folder='.')
-app.secret_key = os.urandom(24)
+app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 
 DRIVE_KEY_URL = 'https://drive.google.com/uc?export=download&id=1FMx7iCqGGOXyRMiVcCAzAJYzUY6gLFlC'
 
 ADMIN_USERNAME = "RamtaxJOGI"
 ADMIN_PASSWORD = "AhmadxRamtaxJOGI@123"
-CONTACTS_FILE = 'contacts.csv'
-MEETINGS_FILE = 'meetings.csv'
+DB_FILE = 'portfolio.db'
+
+# Database setup
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS contacts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        message TEXT NOT NULL,
+        date TEXT NOT NULL,
+        time TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS meetings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        date TEXT NOT NULL,
+        time TEXT NOT NULL,
+        topic TEXT,
+        status TEXT DEFAULT 'scheduled',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )''')
+    conn.commit()
+    conn.close()
+
+# Initialize database on startup
+init_db()
 
 # Default available slots (can be customized)
 AVAILABLE_SLOTS = {
@@ -122,65 +150,43 @@ def clean_message(content):
     content = ''.join(char for char in content if ord(char) < 65536)
     return content[:2000]
 
-def init_contacts_file():
-    if not os.path.exists(CONTACTS_FILE):
-        with open(CONTACTS_FILE, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(['id', 'name', 'email', 'message', 'date', 'time'])
-
+# Contact functions using SQLite
 def save_contact(name, email, message):
-    init_contacts_file()
     now = datetime.now()
-    with open(CONTACTS_FILE, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            int(now.timestamp()),
-            name,
-            email,
-            message,
-            now.strftime('%Y-%m-%d'),
-            now.strftime('%H:%M:%S')
-        ])
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('INSERT INTO contacts (name, email, message, date, time) VALUES (?, ?, ?, ?, ?)',
+              (name, email, message, now.strftime('%Y-%m-%d'), now.strftime('%H:%M:%S')))
+    conn.commit()
+    conn.close()
 
 def get_contacts():
-    init_contacts_file()
-    contacts = []
-    with open(CONTACTS_FILE, 'r', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            contacts.append(row)
-    return list(reversed(contacts))
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute('SELECT name, email, message, date, time FROM contacts ORDER BY id DESC')
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
 
-def init_meetings_file():
-    if not os.path.exists(MEETINGS_FILE):
-        with open(MEETINGS_FILE, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(['id', 'name', 'email', 'date', 'time', 'topic', 'status', 'created_at'])
-
+# Meeting functions using SQLite
 def save_meeting(name, email, date, time, topic):
-    init_meetings_file()
     now = datetime.now()
-    with open(MEETINGS_FILE, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            int(now.timestamp()),
-            name,
-            email,
-            date,
-            time,
-            topic,
-            'scheduled',
-            now.strftime('%Y-%m-%d %H:%M:%S')
-        ])
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('INSERT INTO meetings (name, email, date, time, topic, status) VALUES (?, ?, ?, ?, ?, ?)',
+              (name, email, date, time, topic, 'scheduled'))
+    conn.commit()
+    conn.close()
 
 def get_meetings():
-    init_meetings_file()
-    meetings = []
-    with open(MEETINGS_FILE, 'r', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            meetings.append(row)
-    return list(reversed(meetings))
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute('SELECT name, email, date, time, topic, status FROM meetings ORDER BY id DESC')
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
 
 def get_available_slots(date_str):
     try:
@@ -194,7 +200,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('logged_in'):
-            return redirect('/ahmadAdmin')
+            return jsonify({'error': 'Not authenticated'}), 401
         return f(*args, **kwargs)
     return decorated_function
 
@@ -259,7 +265,10 @@ def book_meeting():
 @app.route('/api/meetings')
 def api_meetings():
     meetings = get_meetings()
-    return jsonify(meetings)
+    response = jsonify(meetings)
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -839,71 +848,81 @@ ADMIN_HTML = '''
         }
 
         async function loadContacts() {
-            const response = await fetch('/api/admin/contacts');
-            const contacts = await response.json();
-            
-            const tbody = document.getElementById('contactsBody');
-            const noContacts = document.getElementById('noContacts');
-            
-            if (contacts.length === 0) {
-                tbody.innerHTML = '';
-                noContacts.style.display = 'block';
-                return;
+            try {
+                const response = await fetch('/api/admin/contacts?_t=' + Date.now());
+                if (!response.ok) throw new Error('Failed to load contacts');
+                const contacts = await response.json();
+                
+                const tbody = document.getElementById('contactsBody');
+                const noContacts = document.getElementById('noContacts');
+                
+                if (!contacts || contacts.length === 0) {
+                    tbody.innerHTML = '';
+                    noContacts.style.display = 'block';
+                    return;
+                }
+                
+                noContacts.style.display = 'none';
+                tbody.innerHTML = contacts.map((c, index) => `
+                    <tr>
+                        <td>${c.name}</td>
+                        <td>${c.email}</td>
+                        <td class="message-cell" onclick="showMessageByIndex(${index})">${c.message.length > 50 ? c.message.substring(0, 50) + '...' : c.message}</td>
+                        <td class="date-cell">${c.date}</td>
+                        <td class="date-cell">${c.time}</td>
+                    </tr>
+                `).join('');
+                
+                window.contactsData = contacts;
+                
+                // Stats
+                const today = new Date().toISOString().split('T')[0];
+                const thisWeek = new Date();
+                thisWeek.setDate(thisWeek.getDate() - 7);
+                const weekAgo = thisWeek.toISOString().split('T')[0];
+                
+                document.getElementById('totalContacts').textContent = contacts.length;
+                document.getElementById('todayContacts').textContent = contacts.filter(c => c.date === today).length;
+                document.getElementById('thisWeek').textContent = contacts.filter(c => c.date >= weekAgo).length;
+            } catch (e) {
+                console.error('Error loading contacts:', e);
             }
-            
-            noContacts.style.display = 'none';
-            tbody.innerHTML = contacts.map((c, index) => `
-                <tr>
-                    <td>${c.name}</td>
-                    <td>${c.email}</td>
-                    <td class="message-cell" onclick="showMessageByIndex(${index})">${c.message.length > 50 ? c.message.substring(0, 50) + '...' : c.message}</td>
-                    <td class="date-cell">${c.date}</td>
-                    <td class="date-cell">${c.time}</td>
-                </tr>
-            `).join('');
-            
-            window.contactsData = contacts;
-            
-            // Stats
-            const today = new Date().toISOString().split('T')[0];
-            const thisWeek = new Date();
-            thisWeek.setDate(thisWeek.getDate() - 7);
-            const weekAgo = thisWeek.toISOString().split('T')[0];
-            
-            document.getElementById('totalContacts').textContent = contacts.length;
-            document.getElementById('todayContacts').textContent = contacts.filter(c => c.date === today).length;
-            document.getElementById('thisWeek').textContent = contacts.filter(c => c.date >= weekAgo).length;
         }
 
         async function loadMeetings() {
-            const response = await fetch('/api/admin/meetings');
-            const meetings = await response.json();
-            
-            const tbody = document.getElementById('meetingsBody');
-            const noMeetings = document.getElementById('noMeetings');
-            
-            if (meetings.length === 0) {
-                tbody.innerHTML = '';
-                noMeetings.style.display = 'block';
-                return;
+            try {
+                const response = await fetch('/api/admin/meetings?_t=' + Date.now());
+                if (!response.ok) throw new Error('Failed to load meetings');
+                const meetings = await response.json();
+                
+                const tbody = document.getElementById('meetingsBody');
+                const noMeetings = document.getElementById('noMeetings');
+                
+                if (!meetings || meetings.length === 0) {
+                    tbody.innerHTML = '';
+                    noMeetings.style.display = 'block';
+                    return;
+                }
+                
+                noMeetings.style.display = 'none';
+                tbody.innerHTML = meetings.map(m => `
+                    <tr>
+                        <td>${m.name}</td>
+                        <td>${m.email}</td>
+                        <td>${m.topic || '-'}</td>
+                        <td class="date-cell">${m.date}</td>
+                        <td class="date-cell">${m.time}</td>
+                        <td><span style="color: ${m.status === 'scheduled' ? 'var(--primary)' : 'var(--text-muted)'}">${m.status}</span></td>
+                    </tr>
+                `).join('');
+                
+                // Meeting stats
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('totalMeetings').textContent = meetings.length;
+                document.getElementById('upcomingMeetings').textContent = meetings.filter(m => m.date >= today).length;
+            } catch (e) {
+                console.error('Error loading meetings:', e);
             }
-            
-            noMeetings.style.display = 'none';
-            tbody.innerHTML = meetings.map(m => `
-                <tr>
-                    <td>${m.name}</td>
-                    <td>${m.email}</td>
-                    <td>${m.topic || '-'}</td>
-                    <td class="date-cell">${m.date}</td>
-                    <td class="date-cell">${m.time}</td>
-                    <td><span style="color: ${m.status === 'scheduled' ? 'var(--primary)' : 'var(--text-muted)'}">${m.status}</span></td>
-                </tr>
-            `).join('');
-            
-            // Meeting stats
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('totalMeetings').textContent = meetings.length;
-            document.getElementById('upcomingMeetings').textContent = meetings.filter(m => m.date >= today).length;
         }
 
         checkAuth();
@@ -940,7 +959,10 @@ ADMIN_HTML = '''
 
 @app.route('/ahmadAdmin')
 def admin():
-    return render_template_string(ADMIN_HTML)
+    response = make_response(render_template_string(ADMIN_HTML))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
 
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
@@ -965,14 +987,24 @@ def admin_login():
 @app.route('/api/admin/contacts')
 @login_required
 def admin_contacts():
+    print(f"Loading contacts, session: {session.get('logged_in')}")
     contacts = get_contacts()
-    return jsonify(contacts)
+    print(f"Found {len(contacts)} contacts")
+    response = jsonify(contacts)
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
 
 @app.route('/api/admin/meetings')
 @login_required
 def admin_meetings():
+    print(f"Loading meetings, session: {session.get('logged_in')}")
     meetings = get_meetings()
-    return jsonify(meetings)
+    print(f"Found {len(meetings)} meetings")
+    response = jsonify(meetings)
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
 
 @app.route('/api/admin/logout')
 def admin_logout():
@@ -986,7 +1018,6 @@ def serve_static(filename):
     return send_from_directory('.', filename)
 
 if __name__ == '__main__':
-    init_contacts_file()
     port = int(os.environ.get('PORT', 5000))
     host = '0.0.0.0'
     print(f'\nFlask server starting on {host}:{port}')
