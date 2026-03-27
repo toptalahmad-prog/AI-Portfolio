@@ -28,6 +28,10 @@
             min-height: 100vh;
             overflow: hidden;
             color: #fff;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
         /* Animated Background */
@@ -118,30 +122,102 @@
         /* Floating Icons */
         .floating-icons {
             position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
+            z-index: 1;
             pointer-events: none;
         }
 
         .floating-icon {
             position: absolute;
-            font-size: 2rem;
-            opacity: 0.3;
-            animation: iconFloat 15s ease-in-out infinite;
+            font-size: 2.5rem;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            transition: transform 0.1s ease, box-shadow 0.3s ease, left 1.5s ease, top 1.5s ease, right 1.5s ease, bottom 1.5s ease;
+            filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.3));
+            pointer-events: auto;
+            -webkit-touch-callout: none;
         }
 
-        .icon-1 { top: 10%; left: 10%; animation-delay: 0s; }
-        .icon-2 { top: 20%; right: 15%; animation-delay: -3s; }
-        .icon-3 { bottom: 30%; left: 8%; animation-delay: -6s; }
-        .icon-4 { bottom: 15%; right: 10%; animation-delay: -9s; }
-        .icon-5 { top: 40%; left: 5%; animation-delay: -12s; }
-        .icon-6 { top: 60%; right: 5%; animation-delay: -2s; }
+        .floating-icon:hover {
+            transform: scale(1.3);
+            filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.6));
+        }
 
-        @keyframes iconFloat {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            25% { transform: translateY(-20px) rotate(15deg); }
-            50% { transform: translateY(10px) rotate(-10deg); }
-            75% { transform: translateY(-15px) rotate(5deg); }
+        .floating-icon.dragging {
+            cursor: grabbing;
+            filter: drop-shadow(0 0 30px rgba(255, 0, 255, 0.8));
+            z-index: 1000;
+            animation: none !important;
+        }
+
+        .floating-icon.thrown {
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .floating-icon.returning {
+            transition: all 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .icon-1 { top: 8%; left: 5%; animation: iconFloat1 12s ease-in-out infinite; }
+        .icon-2 { top: 15%; right: 8%; animation: iconFloat2 14s ease-in-out infinite; }
+        .icon-3 { bottom: 35%; left: 6%; animation: iconFloat3 11s ease-in-out infinite; }
+        .icon-4 { bottom: 12%; right: 6%; animation: iconFloat4 13s ease-in-out infinite; }
+        .icon-5 { top: 45%; left: 4%; animation: iconFloat5 15s ease-in-out infinite; }
+        .icon-6 { top: 65%; right: 4%; animation: iconFloat6 10s ease-in-out infinite; }
+        .icon-7 { bottom: 50%; left: 3%; animation: iconFloat7 16s ease-in-out infinite; }
+        .icon-8 { top: 30%; right: 3%; animation: iconFloat8 12s ease-in-out infinite; }
+
+        @keyframes iconFloat1 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(15px, -25px) rotate(10deg); }
+            50% { transform: translate(-10px, -15px) rotate(-5deg); }
+            75% { transform: translate(20px, -10px) rotate(8deg); }
+        }
+
+        @keyframes iconFloat2 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-20px, -15px) rotate(-10deg); }
+            66% { transform: translate(10px, -25px) rotate(5deg); }
+        }
+
+        @keyframes iconFloat3 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(25px, 15px) rotate(15deg); }
+        }
+
+        @keyframes iconFloat4 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(-15px, 20px) rotate(-8deg); }
+            75% { transform: translate(10px, -10px) rotate(12deg); }
+        }
+
+        @keyframes iconFloat5 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            40% { transform: translate(20px, -20px) rotate(10deg); }
+            70% { transform: translate(-15px, 10px) rotate(-12deg); }
+        }
+
+        @keyframes iconFloat6 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            30% { transform: translate(-25px, -10px) rotate(-15deg); }
+            60% { transform: translate(15px, 20px) rotate(8deg); }
+        }
+
+        @keyframes iconFloat7 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(30px, -15px) rotate(12deg); }
+        }
+
+        @keyframes iconFloat8 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-20px, -30px) rotate(-10deg); }
+            66% { transform: translate(15px, 10px) rotate(8deg); }
         }
 
         /* Grid Pattern */
@@ -665,13 +741,15 @@
 
     <div class="particles" id="particles"></div>
 
-    <div class="floating-icons">
-        <div class="floating-icon icon-1">🚀</div>
-        <div class="floating-icon icon-2">🎮</div>
-        <div class="floating-icon icon-3">🌐</div>
-        <div class="floating-icon icon-4">🤖</div>
-        <div class="floating-icon icon-5">⚡</div>
-        <div class="floating-icon icon-6">💎</div>
+    <div class="floating-icons" id="floatingIcons">
+        <div class="floating-icon icon-1" data-original-left="5%" data-original-top="8%">🚀</div>
+        <div class="floating-icon icon-2" data-original-right="8%" data-original-top="15%">🎮</div>
+        <div class="floating-icon icon-3" data-original-left="6%" data-original-bottom="35%">🌐</div>
+        <div class="floating-icon icon-4" data-original-right="6%" data-original-bottom="12%">🤖</div>
+        <div class="floating-icon icon-5" data-original-left="4%" data-original-top="45%">⚡</div>
+        <div class="floating-icon icon-6" data-original-right="4%" data-original-top="65%">💎</div>
+        <div class="floating-icon icon-7" data-original-left="3%" data-original-bottom="50%">🔮</div>
+        <div class="floating-icon icon-8" data-original-right="3%" data-original-top="30%">🌟</div>
     </div>
 
     <div class="mouse-glow" id="mouseGlow"></div>
@@ -831,6 +909,116 @@
             }
         `;
         document.head.appendChild(style);
+
+        // Draggable & Throwable Icons
+        const icons = document.querySelectorAll('.floating-icon');
+        let isDragging = false;
+        let currentIcon = null;
+        let offsetX = 0, offsetY = 0;
+        let velocityX = 0, velocityY = 0;
+        let lastX = 0, lastY = 0;
+        let iconStartX = 0, iconStartY = 0;
+
+        // Prevent context menu
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
+        icons.forEach(icon => {
+            icon.addEventListener('mousedown', startDrag);
+            icon.addEventListener('touchstart', startDrag, { passive: false });
+        });
+
+        document.addEventListener('mousemove', onDrag);
+        document.addEventListener('touchmove', onDrag, { passive: false });
+
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
+
+        function startDrag(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            currentIcon = e.target.closest('.floating-icon');
+            if (!currentIcon) return;
+
+            isDragging = true;
+            currentIcon.classList.add('dragging');
+            currentIcon.classList.remove('thrown', 'returning');
+            currentIcon.style.animation = 'none';
+            currentIcon.style.transition = 'none';
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const rect = currentIcon.getBoundingClientRect();
+            offsetX = clientX - rect.left;
+            offsetY = clientY - rect.top;
+            iconStartX = rect.left;
+            iconStartY = rect.top;
+            
+            lastX = clientX;
+            lastY = clientY;
+            velocityX = 0;
+            velocityY = 0;
+        }
+
+        function onDrag(e) {
+            if (!isDragging || !currentIcon) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            velocityX = clientX - lastX;
+            velocityY = clientY - lastY;
+            lastX = clientX;
+            lastY = clientY;
+
+            const rotation = Math.min(Math.max(velocityX * 3, -45), 45);
+            currentIcon.style.left = (clientX - offsetX) + 'px';
+            currentIcon.style.top = (clientY - offsetY) + 'px';
+            currentIcon.style.right = 'auto';
+            currentIcon.style.bottom = 'auto';
+            currentIcon.style.transform = `rotate(${rotation}deg) scale(1.4)`;
+        }
+
+        function endDrag(e) {
+            if (!isDragging || !currentIcon) return;
+            
+            isDragging = false;
+            currentIcon.classList.remove('dragging');
+            currentIcon.classList.add('thrown');
+
+            const rotation = Math.min(Math.max(velocityX * 8, -60), 60);
+            currentIcon.style.transform = `rotate(${rotation}deg) scale(1.2)`;
+
+            setTimeout(() => {
+                returnToOriginal(currentIcon);
+            }, 600);
+        }
+
+        function returnToOriginal(icon) {
+            icon.classList.remove('thrown');
+            icon.classList.add('returning');
+            icon.style.transition = 'all 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+            
+            const origLeft = icon.dataset.originalLeft;
+            const origRight = icon.dataset.originalRight;
+            const origTop = icon.dataset.originalTop;
+            const origBottom = icon.dataset.originalBottom;
+
+            icon.style.left = origLeft || 'auto';
+            icon.style.right = origRight || 'auto';
+            icon.style.top = origTop || 'auto';
+            icon.style.bottom = origBottom || 'auto';
+            icon.style.transform = '';
+            icon.style.animation = '';
+
+            setTimeout(() => {
+                icon.classList.remove('returning');
+                icon.style.transition = '';
+            }, 1200);
+        }
     </script>
 </body>
 </html>
