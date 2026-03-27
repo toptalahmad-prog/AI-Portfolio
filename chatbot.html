@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Chatbot - Muhammad Ahmad Humayoun</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%2300f0ff' /%3E%3Cstop offset='100%25' style='stop-color:%23ff00ff' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='6' fill='%230a0a0f'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='16' font-weight='bold' fill='url(%23grad)' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -473,6 +474,82 @@
             box-shadow: 0 10px 30px rgba(0, 240, 255, 0.15);
         }
 
+        /* 3D Floating Elements */
+        .chatbot-floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .chat-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(1px);
+        }
+
+        .chat-orb-1 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.12) 0%, transparent 70%);
+            top: 5%;
+            left: -50px;
+            animation: chatFloat1 25s ease-in-out infinite;
+        }
+
+        .chat-orb-2 {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 0, 255, 0.1) 0%, transparent 70%);
+            top: 40%;
+            right: -30px;
+            animation: chatFloat2 22s ease-in-out infinite;
+        }
+
+        .chat-orb-3 {
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.08) 0%, transparent 70%);
+            bottom: 10%;
+            left: 20%;
+            animation: chatFloat3 28s ease-in-out infinite;
+        }
+
+        .chat-orb-4 {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, rgba(255, 255, 0, 0.06) 0%, transparent 70%);
+            top: 20%;
+            right: 15%;
+            animation: chatFloat4 20s ease-in-out infinite;
+        }
+
+        @keyframes chatFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            33% { transform: translate(40px, -30px) scale(1.1) rotate(5deg); }
+            66% { transform: translate(-20px, 20px) scale(0.95) rotate(-3deg); }
+        }
+
+        @keyframes chatFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            50% { transform: translate(-50px, 40px) scale(1.15) rotate(-8deg); }
+        }
+
+        @keyframes chatFloat3 {
+            0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            33% { transform: translate(30px, -20px) scale(0.9) rotate(10deg); }
+            66% { transform: translate(-20px, -30px) scale(1.05) rotate(-5deg); }
+        }
+
+        @keyframes chatFloat4 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(25px, 25px) scale(1.2); }
+        }
+
         /* Mobile */
         @media (max-width: 600px) { 
             .chatbot-container { 
@@ -498,6 +575,14 @@
         <div class="glow-2"></div>
     </div>
     <div class="grid-bg"></div>
+
+    <!-- Floating 3D Elements -->
+    <div class="chatbot-floating-elements">
+        <div class="chat-orb chat-orb-1"></div>
+        <div class="chat-orb chat-orb-2"></div>
+        <div class="chat-orb chat-orb-3"></div>
+        <div class="chat-orb chat-orb-4"></div>
+    </div>
 
     <div class="main-content">
         <div class="header">
