@@ -132,12 +132,6 @@ def favicon():
 def serve_audio():
     return send_from_directory('.', 'bgMusic1.mp3', mimetype='audio/mpeg')
 
-@app.route('/<path:filename>')
-def serve_static(filename):
-    if filename.endswith('.mp3'):
-        return send_from_directory('.', filename, mimetype='audio/mpeg')
-    return send_from_directory('.', filename)
-
 @app.route('/api/chat', methods=['POST'])
 def chat():
     if request.method != 'POST':
@@ -448,6 +442,11 @@ ADMIN_HTML = '''
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            cursor: pointer;
+            color: var(--primary);
+        }
+        .message-cell:hover {
+            text-decoration: underline;
         }
         .date-cell {
             color: var(--text-muted);
@@ -457,6 +456,71 @@ ADMIN_HTML = '''
             text-align: center;
             padding: 60px 20px;
             color: var(--text-muted);
+        }
+        /* Message Modal */
+        .message-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .message-modal.show {
+            display: flex;
+        }
+        .message-modal-content {
+            background: var(--dark-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 30px;
+        }
+        .message-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        .message-modal-header h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        .message-modal-header p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .message-modal-close {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+        .message-modal-close:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .message-modal-body {
+            color: var(--text);
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-break: break-word;
         }
         @media (max-width: 768px) {
             .dashboard-header {
@@ -472,6 +536,21 @@ ADMIN_HTML = '''
     </style>
 </head>
 <body>
+    <!-- Message Modal -->
+    <div class="message-modal" id="messageModal">
+        <div class="message-modal-content">
+            <div class="message-modal-header">
+                <div>
+                    <h3 id="modalName"></h3>
+                    <p id="modalEmail"></p>
+                    <p id="modalDate"></p>
+                </div>
+                <button class="message-modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="message-modal-body" id="modalMessage"></div>
+        </div>
+    </div>
+
     <!-- Login -->
     <div class="login-container" id="loginSection">
         <div class="login-box">
@@ -551,22 +630,43 @@ ADMIN_HTML = '''
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log('Form submitted');
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const btn = document.querySelector('.login-btn');
             
-            const response = await fetch('/api/admin/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
+            btn.textContent = 'Logging in...';
+            btn.disabled = true;
             
-            if (response.ok) {
-                sessionStorage.setItem('adminLoggedIn', 'true');
-                document.getElementById('loginSection').style.display = 'none';
-                document.getElementById('dashboardSection').classList.add('active');
-                loadContacts();
-            } else {
+            try {
+                console.log('Fetching /api/admin/login');
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (response.ok && data.success) {
+                    sessionStorage.setItem('adminLoggedIn', 'true');
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('dashboardSection').classList.add('active');
+                    loadContacts();
+                } else {
+                    document.getElementById('errorMsg').textContent = 'Invalid username or password';
+                    document.getElementById('errorMsg').classList.add('show');
+                    btn.textContent = 'Login';
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                document.getElementById('errorMsg').textContent = 'Connection error: ' + error.message;
                 document.getElementById('errorMsg').classList.add('show');
+                btn.textContent = 'Login';
+                btn.disabled = false;
             }
         });
 
@@ -590,15 +690,17 @@ ADMIN_HTML = '''
             }
             
             noContacts.style.display = 'none';
-            tbody.innerHTML = contacts.map(c => `
+            tbody.innerHTML = contacts.map((c, index) => `
                 <tr>
                     <td>${c.name}</td>
                     <td>${c.email}</td>
-                    <td class="message-cell" title="${c.message}">${c.message}</td>
+                    <td class="message-cell" onclick="showMessageByIndex(${index})">${c.message.length > 50 ? c.message.substring(0, 50) + '...' : c.message}</td>
                     <td class="date-cell">${c.date}</td>
                     <td class="date-cell">${c.time}</td>
                 </tr>
             `).join('');
+            
+            window.contactsData = contacts;
             
             // Stats
             const today = new Date().toISOString().split('T')[0];
@@ -612,6 +714,32 @@ ADMIN_HTML = '''
         }
 
         checkAuth();
+
+        function showMessageByIndex(index) {
+            const c = window.contactsData[index];
+            if (!c) return;
+            document.getElementById('modalName').textContent = c.name;
+            document.getElementById('modalEmail').textContent = c.email;
+            document.getElementById('modalDate').textContent = c.date + ' at ' + c.time;
+            document.getElementById('modalMessage').textContent = c.message;
+            document.getElementById('messageModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('messageModal').classList.remove('show');
+        }
+
+        document.getElementById('messageModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
     </script>
 </body>
 </html>
@@ -623,14 +751,23 @@ def admin():
 
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    
-    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-        session['logged_in'] = True
-        return jsonify({'success': True})
-    return jsonify({'success': False}), 401
+    print("Login attempt received")
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        print(f"Username: {username}, Password: {password}")
+        print(f"Expected - Username: {ADMIN_USERNAME}, Password: {ADMIN_PASSWORD}")
+        
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['logged_in'] = True
+            print("Login successful!")
+            return jsonify({'success': True})
+        print("Login failed - invalid credentials")
+        return jsonify({'success': False}), 401
+    except Exception as e:
+        print(f"Login error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/admin/contacts')
 @login_required
@@ -642,6 +779,12 @@ def admin_contacts():
 def admin_logout():
     session.pop('logged_in', None)
     return jsonify({'success': True})
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    if filename.endswith('.mp3'):
+        return send_from_directory('.', filename, mimetype='audio/mpeg')
+    return send_from_directory('.', filename)
 
 if __name__ == '__main__':
     init_contacts_file()
