@@ -123,7 +123,7 @@ def chat():
                 'Content-Type': 'application/json'
             },
             json={
-                'model': 'mixtral-8x7b-32768',
+                'model': 'llama-3.1-8b-instant',
                 'messages': formatted_messages,
                 'temperature': 0.7,
                 'max_tokens': 350
