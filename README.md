@@ -12,56 +12,89 @@ A stunning neon-themed AI-powered portfolio with embedded chatbot that answers q
 
 ## How It Works
 
-The API key is stored in **Google Drive** and fetched at runtime by Netlify Functions. The key is **never stored in code** or exposed to users.
+The API key is stored in **Google Drive** and fetched at runtime by the Flask server. The key is **never stored in code** or exposed to users.
+
+---
+
+## Quick Start (Local Development)
+
+### 1. Install Python Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Run the Server
+
+```bash
+python app.py
+```
+
+### 3. Open in Browser
+
+- **http://localhost:5000** - Main portfolio
+- **http://localhost:5000/chatbot.html** - Standalone chatbot
+
+---
 
 ## Deployment Guide
 
-### 1. Push to GitHub
+### Deploy to Railway (Recommended)
 
-```bash
-git add .
-git commit -m "Portfolio with AI chatbot"
-git push origin main
-```
+1. Go to [railway.app](https://railway.app)
+2. Sign up with GitHub
+3. Create new project → "Deploy from GitHub repo"
+4. Select your repository
+5. Railway auto-detects Python/Flask
+6. Add environment variable: `PORT=80`
+7. Deploy!
 
-### 2. Deploy to Netlify
+### Deploy to Render
 
-1. Go to [netlify.com](https://netlify.com)
-2. Click "Add new site" → "Import an existing project"
-3. Connect to GitHub and select your repository
-4. Deploy settings:
-   - **Build command:** (leave empty)
-   - **Publish directory:** (leave empty)
-5. Click "Deploy"
+1. Go to [render.com](https://render.com)
+2. Create "Web Service"
+3. Connect GitHub repo
+4. Settings:
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `gunicorn app:app`
+5. Deploy!
 
-### 3. Custom Domain (Optional)
+### Deploy to PythonAnywhere
 
-1. Go to Site Settings → Domain Management
-2. Add your custom domain
-3. Update DNS as instructed
+1. Go to [pythonanywhere.com](https://pythonanywhere.com)
+2. Open Bash console
+3. `git clone your-repo`
+4. `pip install -r requirements.txt`
+5. Web tab → Add new app → Flask
+6. Configure WSGI file to point to `app.py`
+
+---
 
 ## Project Structure
 
 ```
-├── index.html                    # Main portfolio
-├── netlify/
-│   └── functions/
-│       └── chat.js             # Serverless function (fetches key from Google Drive)
-├── netlify.toml                # Netlify configuration
+├── index.html           # Main portfolio
+├── chatbot.html         # Standalone chatbot page
+├── app.py              # Flask server (Python)
+├── requirements.txt    # Python dependencies
 └── README.md
 ```
+
+---
 
 ## API Key Setup
 
 The API key is stored in Google Drive and fetched at runtime. To change the key:
 
 1. Upload a new `key.json` file to Google Drive
-2. Update the `DRIVE_KEY_URL` in `netlify/functions/chat.js`
+2. Update the `DRIVE_KEY_URL` in `app.py`
+
+---
 
 ## Tech Stack
 
 - HTML5, CSS3, JavaScript (Vanilla)
-- Netlify Functions (Serverless Backend)
+- Python Flask (Backend Server)
 - Groq API (AI - llama-3.1-8b-instant)
 
 ## License
