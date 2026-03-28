@@ -44,6 +44,14 @@ def get_db():
     conn = psycopg2.connect(db_url)
     return conn
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return jsonify({'error': 'Not authenticated'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
 # Booking API Routes
 @app.route('/api/slots', methods=['GET'])
 def get_slots():
