@@ -863,6 +863,18 @@ def admin_logout():
     session.pop('logged_in', None)
     return jsonify({'success': True})
 
+@app.route('/')
+def index():
+    return send_from_directory('.', 'index.html')
+
+@app.route('/chatbot')
+def chatbot():
+    return send_from_directory('.', 'chatbot.html')
+
+@app.route('/book')
+def booking():
+    return send_from_directory('.', 'book.html')
+
 @app.route('/<path:filename>')
 def serve_static(filename):
     if filename.endswith('.mp3'):
