@@ -35,8 +35,8 @@ def send_telegram_message(message):
         print(f"Telegram error: {e}")
         return False
 
-ADMIN_USERNAME = "RamtaxJOGI"
-ADMIN_PASSWORD = "AhmadxRamtaxJOGI@123"
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', '')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '')
 
 def get_db():
     conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
