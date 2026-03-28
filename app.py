@@ -299,8 +299,6 @@ def chat():
     
     try:
         api_key = get_api_key()
-        print(f"Using API key: {api_key[:10]}..." if api_key else "No API key")
-        
         cleaned_messages = []
         for msg in messages[-6:]:
             role = msg.get('role', 'user')
@@ -988,8 +986,6 @@ def admin_login():
         data = request.get_json()
         username = data.get('username')
         password = data.get('password')
-        print(f"Username: {username}, Password: {password}")
-        print(f"Expected - Username: {ADMIN_USERNAME}, Password: {ADMIN_PASSWORD}")
         
         if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
             session['logged_in'] = True
