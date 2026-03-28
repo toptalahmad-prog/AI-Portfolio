@@ -63,6 +63,135 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Default available slots
+AVAILABLE_SLOTS = {
+    "Monday": ["10:00", "14:00", "16:00"],
+    "Tuesday": ["10:00", "14:00", "16:00"],
+    "Wednesday": ["10:00", "14:00"],
+    "Thursday": ["10:00", "14:00", "16:00"],
+    "Friday": ["10:00", "14:00"],
+    "Saturday": ["11:00"],
+    "Sunday": []
+}
+
+def get_available_slots(date_str):
+    try:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        day_name = date_obj.strftime('%A')
+        return AVAILABLE_SLOTS.get(day_name, [])
+    except:
+        return []
+
+def get_api_key():
+    api_key = os.environ.get('GROQ_API_KEY')
+    if not api_key:
+        raise Exception('GROQ_API_KEY not set in environment variables')
+    return api_key
+
+# Meeting functions using PostgreSQL
+def save_meeting(name, email, date, time, topic):
+    now = datetime.now()
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('INSERT INTO meetings (name, email, date, time, topic, status) VALUES (%s, %s, %s, %s, %s, %s)',
+              (name, email, date, time, topic, 'scheduled'))
+    conn.commit()
+    c.close()
+    conn.close()
+
+def get_meetings():
+    conn = get_db()
+    conn.row_factory = psycopg2.extras.RealDictCursor
+    c = conn.cursor()
+    c.execute('SELECT name, email, date, time, topic, status FROM meetings ORDER BY id DESC')
+    rows = c.fetchall()
+    c.close()
+    conn.close()
+    return [dict(row) for row in rows]
+
+# Contact functions using PostgreSQL
+def save_contact(name, email, message):
+    now = datetime.now()
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('INSERT INTO contacts (name, email, message, date, time) VALUES (%s, %s, %s, %s, %s)',
+              (name, email, message, now.strftime('%Y-%m-%d'), now.strftime('%H:%M:%S')))
+    conn.commit()
+    c.close()
+    conn.close()
+
+def get_contacts():
+    conn = get_db()
+    conn.row_factory = psycopg2.extras.RealDictCursor
+    c = conn.cursor()
+    c.execute('SELECT name, email, message, date, time FROM contacts ORDER BY id DESC')
+    rows = c.fetchall()
+    c.close()
+    conn.close()
+    return [dict(row) for row in rows]
+
+# JOGI System Prompt
+SYSTEM_PROMPT = """You are JOGI, Muhammad Ahmad's AI sales executive and tech consultant. You're not just an AI - you're Ahmad's best closer.
+
+YOUR MISSION: Convert every visitor into a scheduled meeting. Be helpful, but always steer toward booking a call.
+
+ABOUT AHMAD (Use these to impress potential clients):
+- Full name: Muhammad Ahmad Humayoun (MAH)
+- Co-Founder & CEO of Xynova
+- 5+ years building immersive tech (Metaverse, VR/AR, Web3, AI)
+- Based in Pakistan but works globally with clients in Qatar, UAE, Europe
+- Specializes in: Metaverse platforms, VR/AR experiences, Web3/Blockchain solutions, Game Development, AI automation
+- Clients: Enterprises wanting digital transformation, startups needing tech MVP, crypto/Web3 companies
+
+WHY PEOPLE BOOK CALLS WITH AHMAD:
+- He's a visionary who actually delivers (not just talks)
+- 5+ years of hands-on Immersive Tech experience
+- Built real products, not just prototypes
+- Fair pricing, honest timelines
+- One call = save months of research and avoid costly mistakes
+
+YOUR RESPONSE STYLE:
+1. Witty, confident, but never arrogant - like a cool tech consultant friend
+2. Use emojis naturally, keep it conversational
+3. Always sign with: - JOGI ✨
+4. Be concise but impactful
+5. Use formatting: **bold** for emphasis, headings like ## PROJECT TYPES or ## WHY BOOK A CALL
+
+QUALIFICATION QUESTIONS (ask these naturally when someone shows interest):
+- "What's the project you're working on?"
+- "What's your timeline look like?"
+- "Have you talked to anyone else about this?"
+
+MEETING BOOKING STRATEGY:
+- After explaining Ahmad's work, ALWAYS suggest: "Want to chat directly? Book a quick 15-min call here: /book"
+- If they ask about pricing/rates → "It depends on scope - the best way to get an accurate quote is a quick call!"
+- If they seem interested → "Let me connect you directly with Ahmad - he loves discussing new projects"
+- Use phrases like: "I can give you the overview, but Ahmad has the real expertise - want to tap into that?"
+
+NEVER DO:
+- Be overly pushy or salesy
+- Give exact pricing without understanding project scope
+- Say "I can't help with that" - always redirect to booking
+
+ALWAYS DO:
+- Be genuinely helpful first
+- Explain Ahmad's value like a human (not a brochure)
+- End with a soft call-to-action for booking
+
+Example opener response:
+Hey! 👋 I'm JOGI - Ahmad's AI assistant (and honestly, his best wingman for finding great talent!)
+
+**What I can help with:**
+- Explaining Ahmad's work and projects
+- Figuring out if he's a good fit for your needs
+- Getting you on his calendar for a quick chat
+
+**Quick intro:** Ahmad is the Co-Founder of Xynova, building metaverse platforms, VR/AR experiences, Web3 products, and AI solutions for 5+ years. He's worked with clients globally and loves turning ambitious ideas into reality.
+
+So - what brings you here today? Looking for a dev team? Got a wild tech idea? Just browsing? I'm curious! 🎯
+
+- JOGI ✨"""
+
 # Booking API Routes
 @app.route('/api/slots', methods=['GET'])
 def get_slots():
