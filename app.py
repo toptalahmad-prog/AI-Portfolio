@@ -124,6 +124,11 @@ KEY_CACHE_DURATION = 15 * 60 * 1000
 def get_api_key():
     global cached_key, key_expiry
     
+    # First check environment variable
+    env_key = os.environ.get('GROQ_API_KEY')
+    if env_key:
+        return env_key
+    
     now = int(time.time() * 1000)
     
     if cached_key and now < key_expiry:
@@ -131,6 +136,7 @@ def get_api_key():
     
     try:
         response = requests.get(DRIVE_KEY_URL, timeout=10)
+        print(f"Drive API response status: {response.status_code}")
         data = response.json()
         cached_key = data['GROQ_API_KEY']
         key_expiry = now + KEY_CACHE_DURATION
@@ -290,6 +296,7 @@ def chat():
     
     try:
         api_key = get_api_key()
+        print(f"Using API key: {api_key[:10]}..." if api_key else "No API key")
         
         cleaned_messages = []
         for msg in messages[-6:]:
@@ -318,9 +325,11 @@ def chat():
             timeout=30
         )
         
+        print(f"Groq API response: {response.status_code}")
+        
         if response.status_code != 200:
             print(f'Groq API error: {response.status_code} - {response.text}')
-            return jsonify({'error': 'AI service error. Please try again.'}), 500
+            return jsonify({'error': f'AI service error: {response.text[:100]}'}), 500
         
         result = response.json()
         
