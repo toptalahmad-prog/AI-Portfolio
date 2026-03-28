@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaleBorg - AI Product Consultant</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { 
+            --primary: #00f0ff; 
+            --secondary: #ff00ff; 
+            --tertiary: #00ff88; 
+            --dark: #0a0a0f;
+            --dark-card: #12121a;
+            --text: #ffffff;
+            --text-muted: #a0a0b0;
+        }
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background: var(--dark); 
+            min-height: 100vh; 
+            overflow: hidden; 
+            color: var(--text); 
+            user-select: none; 
+        }
+        
+        /* Ambient Background Glows */
+        .bg-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .glow-1 {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.15) 0%, transparent 70%);
+            top: -200px;
+            left: -200px;
+            animation: floatGlow 15s ease-in-out infinite;
+        }
+        .glow-2 {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255, 0, 255, 0.12) 0%, transparent 70%);
+            bottom: -150px;
+            right: -150px;
+            animation: floatGlow 18s ease-in-out infinite reverse;
+        }
+        @keyframes floatGlow {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 30px) scale(1.1); }
+        }
+
+        /* Subtle Grid */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Main Content */
+        .main-content { 
+            position: relative; 
+            z-index: 10; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 30px 20px; 
+        }
+
+        /* Header with SaleBorg Branding */
+        .header { 
+            text-align: center; 
+            margin-bottom: 24px; 
+        }
+        
+        .logo-container { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 16px; 
+        }
+        
+        .chatbot-avatar { 
+            width: clamp(44px, 9vw, 56px); 
+            height: clamp(44px, 9vw, 56px); 
+            background: linear-gradient(135deg, var(--tertiary), var(--primary)); 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-family: 'Outfit', sans-serif; 
+            font-weight: 700; 
+            color: var(--dark); 
+            font-size: clamp(0.85rem, 2vw, 1.1rem);
+            box-shadow: 0 0 25px rgba(0, 255, 136, 0.5);
+            animation: avatarPulse 2.5s ease-in-out infinite;
+        }
+        
+        @keyframes avatarPulse { 
+            0%, 100% { transform: scale(1); } 
+            50% { transform: scale(1.05); } 
+        }
+        
+        .chatbot-header-info h3 { 
+            font-family: 'Outfit', sans-serif; 
+            font-size: clamp(1.1rem, 2.5vw, 1.35rem); 
+            font-weight: 600; 
+            color: var(--text); 
+            margin-bottom: 4px; 
+        }
+        
+        .chatbot-header-info span { 
+            font-family: 'Space Grotesk', sans-serif; 
+            font-size: clamp(0.7rem, 1.5vw, 0.8rem); 
+            color: var(--tertiary); 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+        }
+        
+        .status-dot { 
+            width: 8px; 
+            height: 8px; 
+            background: var(--tertiary); 
+            border-radius: 50%; 
+            animation: statusPulse 2s infinite;
+        }
+        
+        @keyframes statusPulse { 
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.6); } 
+            50% { box-shadow: 0 0 0 6px rgba(0, 255, 136, 0); } 
+        }
+
+        /* Messages Area */
+        .chatbot-messages { 
+            flex: 1;
+            width: 100%;
+            max-width: 700px;
+            padding: 20px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 14px; 
+            scroll-behavior: smooth; 
+            max-height: 60vh;
+        }
+        
+        .chatbot-messages::-webkit-scrollbar { width: 5px; }
+        .chatbot-messages::-webkit-scrollbar-track { background: transparent; }
+        .chatbot-messages::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.25); border-radius: 3px; }
+
+        /* Messages */
+        .message { 
+            max-width: 85%; 
+            padding: 14px 18px; 
+            border-radius: 18px; 
+            font-size: clamp(0.85rem, 1.8vw, 0.95rem); 
+            line-height: 1.6; 
+            animation: messageIn 0.35s ease; 
+            white-space: pre-wrap; 
+        }
+        
+        @keyframes messageIn { 
+            from { opacity: 0; transform: translateY(15px) scale(0.96); } 
+            to { opacity: 1; transform: translateY(0) scale(1); } 
+        }
+        
+        .message.bot { 
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 240, 255, 0.04)); 
+            border: 1px solid rgba(0, 255, 136, 0.2); 
+            border-bottom-left-radius: 6px; 
+            color: var(--text); 
+            align-self: flex-start; 
+        }
+        
+        .message.bot strong {
+            color: var(--tertiary);
+        }
+        
+        .message.user { 
+            background: linear-gradient(135deg, var(--primary), var(--secondary)); 
+            border-bottom-right-radius: 6px; 
+            color: var(--dark); 
+            font-weight: 500; 
+            align-self: flex-end; 
+            box-shadow: 0 6px 25px rgba(0, 240, 255, 0.25);
+        }
+
+        /* Typing Indicator */
+        .message.typing { 
+            display: flex; 
+            gap: 6px; 
+            padding: 18px 22px; 
+            background: transparent; 
+            border: none; 
+        }
+        
+        .message.typing span { 
+            width: 10px; 
+            height: 10px; 
+            background: var(--primary); 
+            border-radius: 50%; 
+            animation: typingBounce 1.3s ease-in-out infinite; 
+            box-shadow: 0 0 12px var(--primary);
+        }
+        
+        .message.typing span:nth-child(2) { 
+            animation-delay: 0.15s; 
+            background: var(--secondary); 
+            box-shadow: 0 0 12px var(--secondary);
+        }
+        
+        .message.typing span:nth-child(3) { 
+            animation-delay: 0.3s; 
+            background: var(--tertiary); 
+            box-shadow: 0 0 12px var(--tertiary);
+        }
+        
+        @keyframes typingBounce { 
+            0%, 60%, 100% { transform: translateY(0); } 
+            30% { transform: translateY(-12px); } 
+        }
+
+        /* Welcome Screen */
+        .chatbot-welcome { 
+            text-align: center; 
+            padding: 24px; 
+        }
+        
+        .welcome-icon { 
+            font-size: clamp(3rem, 10vw, 4.5rem); 
+            margin-bottom: 16px; 
+            animation: welcomeBounce 2s ease-in-out infinite; 
+        }
+        
+        @keyframes welcomeBounce { 
+            0%, 100% { transform: translateY(0) rotate(-3deg); } 
+            50% { transform: translateY(-10px) rotate(3deg); } 
+        }
+        
+        .chatbot-welcome h4 { 
+            font-size: clamp(1.2rem, 3vw, 1.5rem); 
+            margin-bottom: 10px; 
+            color: var(--text); 
+        }
+        
+        .chatbot-welcome p { 
+            color: var(--text-muted); 
+            font-size: clamp(0.85rem, 1.6vw, 0.95rem); 
+            margin-bottom: 24px; 
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .chatbot-suggestions { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            max-width: 320px;
+            margin: 0 auto;
+        }
+        
+        .suggestion-btn { 
+            padding: 14px 20px; 
+            background: rgba(255, 255, 255, 0.03); 
+            border: 1px solid rgba(0, 255, 136, 0.2); 
+            border-radius: 14px; 
+            color: var(--primary); 
+            font-family: 'Outfit', sans-serif; 
+            font-size: clamp(0.8rem, 1.6vw, 0.9rem);
+            font-weight: 500;
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            text-align: left;
+        }
+        
+        .suggestion-btn:hover { 
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 240, 255, 0.08)); 
+            border-color: var(--tertiary); 
+            transform: translateX(6px);
+            box-shadow: 0 6px 25px rgba(0, 255, 136, 0.15);
+        }
+
+        /* Input Area */
+        .chatbot-input { 
+            padding: 18px 20px;
+            background: rgba(0, 0, 0, 0.3); 
+            border-top: 1px solid rgba(0, 255, 136, 0.1); 
+            display: flex; 
+            gap: 12px;
+            width: 100%;
+            max-width: 700px;
+        }
+        
+        .chatbot-input input { 
+            flex: 1; 
+            padding: 14px 22px; 
+            background: rgba(255, 255, 255, 0.05); 
+            border: 2px solid rgba(0, 255, 136, 0.15); 
+            border-radius: 30px; 
+            color: var(--text); 
+            font-family: 'Outfit', sans-serif; 
+            font-size: 0.95rem; 
+            transition: all 0.3s ease; 
+        }
+        
+        .chatbot-input input:focus { 
+            outline: none; 
+            border-color: var(--tertiary); 
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.15);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .chatbot-input input::placeholder { 
+            color: var(--text-muted); 
+        }
+        
+        .chatbot-input button { 
+            width: 52px; 
+            height: 52px; 
+            background: linear-gradient(135deg, var(--tertiary), var(--primary)); 
+            border: none; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            transition: all 0.3s ease; 
+            box-shadow: 0 6px 25px rgba(0, 255, 136, 0.3);
+            flex-shrink: 0;
+        }
+        
+        .chatbot-input button:hover { 
+            transform: scale(1.1) rotate(8deg); 
+            box-shadow: 0 10px 35px rgba(0, 255, 136, 0.45);
+        }
+        
+        .chatbot-input button svg { 
+            width: 22px; 
+            height: 22px; 
+            fill: var(--dark); 
+        }
+
+        /* Back Link */
+        .back-link { 
+            margin-top: 24px; 
+            padding: 14px 32px; 
+            background: transparent; 
+            border: 1px solid rgba(0, 255, 136, 0.25); 
+            border-radius: 30px; 
+            color: var(--tertiary); 
+            text-decoration: none; 
+            font-family: 'Outfit', sans-serif; 
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease; 
+        }
+        
+        .back-link:hover { 
+            background: rgba(0, 255, 136, 0.1); 
+            border-color: var(--tertiary); 
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.15);
+        }
+
+        /* Product Cards in Chat */
+        .product-card-mini {
+            display: flex;
+            gap: 12px;
+            background: var(--dark-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .product-card-mini:hover {
+            border-color: var(--tertiary);
+            transform: translateY(-2px);
+        }
+        
+        .product-card-mini img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        
+        .product-card-mini-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .product-card-mini-brand {
+            font-size: 0.7rem;
+            color: var(--secondary);
+            text-transform: uppercase;
+        }
+        
+        .product-card-mini-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .product-card-mini-price {
+            font-size: 0.9rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* 3D Floating Elements */
+        .chatbot-floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .chat-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(1px);
+        }
+
+        .chat-orb-1 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.12) 0%, transparent 70%);
+            top: 5%;
+            left: -50px;
+            animation: chatFloat1 25s ease-in-out infinite;
+        }
+
+        .chat-orb-2 {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.1) 0%, transparent 70%);
+            top: 40%;
+            right: -30px;
+            animation: chatFloat2 22s ease-in-out infinite;
+        }
+
+        .chat-orb-3 {
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, rgba(255, 0, 255, 0.08) 0%, transparent 70%);
+            bottom: 10%;
+            left: 20%;
+            animation: chatFloat3 28s ease-in-out infinite;
+        }
+
+        @keyframes chatFloat1 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        @keyframes chatFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-40px, 20px) scale(1.1); }
+        }
+
+        @keyframes chatFloat3 {
+            0%, 100% { transform: translate(0, 0); }
+            33% { transform: translate(20px, -40px); }
+            66% { transform: translate(-30px, -20px); }
+        }
+
+        @media (max-width: 768px) {
+            .chatbot-messages {
+                max-height: 55vh;
+            }
+            
+            .chatbot-input {
+                padding: 12px 15px;
+            }
+            
+            .chatbot-input button {
+                width: 46px;
+                height: 46px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background -->
+    <div class="bg-glow">
+        <div class="glow-1"></div>
+        <div class="glow-2"></div>
+    </div>
+    <div class="grid-bg"></div>
+    <div class="chatbot-floating-elements">
+        <div class="chat-orb chat-orb-1"></div>
+        <div class="chat-orb chat-orb-2"></div>
+        <div class="chat-orb chat-orb-3"></div>
+    </div>
+
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-container">
+                <div class="chatbot-avatar">SB</div>
+                <div class="chatbot-header-info">
+                    <h3>SaleBorg</h3>
+                    <span><span class="status-dot"></span> AI Product Consultant</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Messages -->
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="chatbot-welcome" id="welcomeScreen">
+                <div class="welcome-icon">🛍️</div>
+                <h4>Hey there! I'm SaleBorg!</h4>
+                <p>Your personal beauty & cosmetics shopping assistant! Tell me what you're looking for or what you need help with!</p>
+                <div class="chatbot-suggestions">
+                    <button class="suggestion-btn" onclick="sendSuggestion('I want a perfume for men')">🧴 Men's Perfume</button>
+                    <button class="suggestion-btn" onclick="sendSuggestion('Find me a good lip gloss')">💄 Lip Gloss</button>
+                    <button class="suggestion-btn" onclick="sendSuggestion('Best mascara for volume')">👁️ Mascara</button>
+                    <button class="suggestion-btn" onclick="sendSuggestion('Anti-aging skincare products')">✨ Skincare</button>
+                    <button class="suggestion-btn" onclick="sendSuggestion('Show me luxury brands')">💎 Luxury Brands</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Input -->
+        <div class="chatbot-input">
+            <input type="text" id="chatInput" placeholder="Ask SaleBorg for product recommendations..." onkeypress="handleEnter(event)">
+            <button onclick="sendMessage()">
+                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+        </div>
+        
+        <a href="products.html" class="back-link">← Browse All Products</a>
+    </div>
+
+    <script>
+        let chatHistory = [];
+        
+        // SaleBorg System Prompt
+        const SALEBORG_PROMPT = `You are SaleBorg, an expert beauty and cosmetics product consultant. Your job is to help customers find the perfect products.
+
+ABOUT THE STORE:
+- We have 40,000+ premium beauty & cosmetics products
+- Brands include: Chanel, Pupa Milano, Marc-Antoine Barrois Paris, Ayten, and many more
+- Products: perfumes, makeup, skincare, haircare
+- Price range: budget to luxury (5,000 - 300,000+ IQD)
+- Language: You can respond in both English and Arabic
+
+YOUR JOB:
+1. Understand what the customer is looking for
+2. Search and recommend suitable products from the catalog
+3. Ask follow-up questions to narrow down choices
+4. Provide helpful information about products (price, description, brand)
+5. Be friendly, professional, and knowledgeable
+
+HOW TO RESPOND:
+- Use **bold** for product names and important info
+- Always end with a question to keep the conversation going
+- Sign with: - SaleBorg 🛍️
+
+IMPORTANT:
+- When you recommend products, include the product ID so the system can show details
+- Format product mentions like this: **[Product Name] (ID: X)** - this will display as a clickable product card
+- Ask about preferences: skin type, hair type, budget, occasion, etc.
+
+Example response:
+Hey! Welcome to your personal beauty shopping experience! 🌟
+
+I can help you find:
+- **Fragrances** - Men's & Women's perfumes
+- **Skincare** - Serums, moisturizers, lip care
+- **Makeup** - Mascara, lipstick, eyebrow products
+- **Haircare** - Shampoos, conditioners, hair serums
+
+What are you looking for today? Or tell me about your preferences - skin type, favorite brands, budget range? 
+
+- SaleBorg 🛍️`;
+        
+        function addMessage(content, type, isHtml = false) {
+            const chatbotMessages = document.getElementById('chatbotMessages');
+            const welcome = document.getElementById('welcomeScreen');
+            if (welcome) {
+                welcome.style.animation = 'fadeOut 0.3s ease forwards';
+                setTimeout(() => welcome.remove(), 300);
+            }
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ' + type;
+            
+            if (isHtml) {
+                msgDiv.innerHTML = content;
+            } else {
+                // Format markdown
+                let formatted = content.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                formatted = formatted.replace(/\n/g, '<br>');
+                msgDiv.innerHTML = formatted;
+            }
+            
+            // Make product cards clickable
+            msgDiv.querySelectorAll('.product-card-mini').forEach(card => {
+                card.addEventListener('click', () => {
+                    const productId = card.dataset.id;
+                    if (productId) {
+                        window.location.href = `/products?product=${productId}`;
+                    }
+                });
+            });
+            
+            chatbotMessages.appendChild(msgDiv);
+            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }
+        
+        function showTyping() {
+            const chatbotMessages = document.getElementById('chatbotMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot typing';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = '<span></span><span></span><span></span>';
+            chatbotMessages.appendChild(typingDiv);
+            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }
+        
+        function hideTyping() {
+            const typing = document.getElementById('typingIndicator');
+            if (typing) typing.remove();
+        }
+        
+        function sendSuggestion(msg) {
+            document.getElementById('chatInput').value = msg;
+            sendMessage();
+        }
+        
+        function handleEnter(event) {
+            if (event.key === 'Enter') sendMessage();
+        }
+        
+        async function sendMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            if (!message) return;
+            
+            chatInput.value = '';
+            addMessage(message, 'user');
+            chatHistory.push({ role: 'user', content: message });
+            showTyping();
+            
+            try {
+                const response = await fetch('/api/saleborg', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: chatHistory })
+                });
+                
+                hideTyping();
+                
+                if (!response.ok) {
+                    const err = await response.json();
+                    addMessage('Oops! ' + (err.error || 'Something went wrong!') + ' 😅 - SaleBorg 🛍️', 'bot');
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                // Check for product recommendations
+                if (data.products && data.products.length > 0) {
+                    let html = data.message;
+                    
+                    // Add product cards
+                    data.products.slice(0, 3).forEach(product => {
+                        const price = product.updated_price || product.price || 0;
+                        const name = product.name_en || product.name_ar || 'Product';
+                        const brand = product.brand_en || product.brand || '';
+                        const image = product.picture || '';
+                        
+                        html += `
+                            <div class="product-card-mini" data-id="${product.id}">
+                                <img src="${image}" alt="${name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 60 60%22><rect fill=%22%23111111%22 width=%2260%22 height=%2260%22/><text x=%2230%22 y=%2235%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2210%22>No Img</text></svg>'">
+                                <div class="product-card-mini-info">
+                                    ${brand ? `<div class="product-card-mini-brand">${brand}</div>` : ''}
+                                    <div class="product-card-mini-name">${name}</div>
+                                    <div class="product-card-mini-price">${price.toLocaleString()} IQD</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    addMessage(html, 'bot', true);
+                } else {
+                    addMessage(data.message, 'bot');
+                }
+                
+                chatHistory.push({ role: 'assistant', content: data.message });
+            } catch (error) {
+                hideTyping();
+                console.error('Chat error:', error);
+                addMessage('Connection issue! 📶 Try again! - SaleBorg 🛍️', 'bot');
+            }
+        }
+        
+        const style = document.createElement('style');
+        style.textContent = '@keyframes fadeOut { to { opacity: 0; transform: scale(0.9); } }';
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
