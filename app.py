@@ -37,7 +37,11 @@ ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', '')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '')
 
 def get_db():
-    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+    db_url = os.environ.get('DATABASE_URL')
+    if not db_url:
+        print("WARNING: DATABASE_URL not set")
+        raise Exception("DATABASE_URL not configured")
+    conn = psycopg2.connect(db_url)
     return conn
 
 # Booking API Routes
