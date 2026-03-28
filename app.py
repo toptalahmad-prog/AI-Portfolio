@@ -127,77 +127,85 @@ def import_products_from_csv():
     print(f"Total products imported: {count}")
 
 def search_products(query, limit=50, offset=0):
-    conn = get_db()
-    conn.row_factory = psycopg2.extras.RealDictCursor
-    c = conn.cursor()
-    
-    search_query = f"%{query}%"
-    c.execute('''SELECT * FROM products 
-                 WHERE is_active = true AND (
-                     search_text ILIKE %s OR 
-                     name_ar ILIKE %s OR 
-                     name_en ILIKE %s OR
-                     brand ILIKE %s OR
-                     brand_en ILIKE %s
-                 )
-                 ORDER BY updated_price DESC
-                 LIMIT %s OFFSET %s''',
-                 (search_query, search_query, search_query, search_query, search_query, limit, offset))
-    results = c.fetchall()
-    
-    # Get total count
-    c.execute('''SELECT COUNT(*) FROM products 
-                 WHERE is_active = true AND (
-                     search_text ILIKE %s OR 
-                     name_ar ILIKE %s OR 
-                     name_en ILIKE %s OR
-                     brand ILIKE %s OR
-                     brand_en ILIKE %s
-                 )''',
-                 (search_query, search_query, search_query, search_query, search_query))
-    total = c.fetchone()['count']
-    
-    conn.close()
-    return results, total
+    try:
+        conn = get_db()
+        conn.row_factory = psycopg2.extras.RealDictCursor
+        c = conn.cursor()
+        
+        search_query = f"%{query}%"
+        c.execute('''SELECT * FROM products 
+                     WHERE is_active = true AND (
+                         search_text ILIKE %s OR 
+                         name_ar ILIKE %s OR 
+                         name_en ILIKE %s OR
+                         brand ILIKE %s OR
+                         brand_en ILIKE %s
+                     )
+                     ORDER BY updated_price DESC
+                     LIMIT %s OFFSET %s''',
+                     (search_query, search_query, search_query, search_query, search_query, limit, offset))
+        results = c.fetchall()
+        
+        # Get total count
+        c.execute('''SELECT COUNT(*) FROM products 
+                     WHERE is_active = true AND (
+                         search_text ILIKE %s OR 
+                         name_ar ILIKE %s OR 
+                         name_en ILIKE %s OR
+                         brand ILIKE %s OR
+                         brand_en ILIKE %s
+                     )''',
+                     (search_query, search_query, search_query, search_query, search_query))
+        total = c.fetchone()['count']
+        
+        conn.close()
+        return results, total
+    except Exception as e:
+        print(f"Search error: {e}")
+        return [], 0
 
 def get_all_products(limit=50, offset=0, category=None, brand=None):
-    conn = get_db()
-    conn.row_factory = psycopg2.extras.RealDictCursor
-    c = conn.cursor()
-    
-    if category:
-        c.execute('''SELECT * FROM products 
-                     WHERE is_active = true AND menu ILIKE %s
-                     ORDER BY updated_price DESC
-                     LIMIT %s OFFSET %s''',
-                     (f"%{category}%", limit, offset))
-    elif brand:
-        c.execute('''SELECT * FROM products 
-                     WHERE is_active = true AND (brand ILIKE %s OR brand_en ILIKE %s)
-                     ORDER BY updated_price DESC
-                     LIMIT %s OFFSET %s''',
-                     (f"%{brand}%", f"%{brand}%", limit, offset))
-    else:
-        c.execute('''SELECT * FROM products 
-                     WHERE is_active = true
-                     ORDER BY updated_price DESC
-                     LIMIT %s OFFSET %s''',
-                     (limit, offset))
-    
-    results = c.fetchall()
-    
-    # Get total count
-    if category:
-        c.execute('SELECT COUNT(*) FROM products WHERE is_active = true AND menu ILIKE %s', (f"%{category}%",))
-    elif brand:
-        c.execute('SELECT COUNT(*) FROM products WHERE is_active = true AND (brand ILIKE %s OR brand_en ILIKE %s)', (f"%{brand}%", f"%{brand}%"))
-    else:
-        c.execute('SELECT COUNT(*) FROM products WHERE is_active = true')
-    
-    total = c.fetchone()['count']
-    
-    conn.close()
-    return results, total
+    try:
+        conn = get_db()
+        conn.row_factory = psycopg2.extras.RealDictCursor
+        c = conn.cursor()
+        
+        if category:
+            c.execute('''SELECT * FROM products 
+                         WHERE is_active = true AND menu ILIKE %s
+                         ORDER BY updated_price DESC
+                         LIMIT %s OFFSET %s''',
+                         (f"%{category}%", limit, offset))
+        elif brand:
+            c.execute('''SELECT * FROM products 
+                         WHERE is_active = true AND (brand ILIKE %s OR brand_en ILIKE %s)
+                         ORDER BY updated_price DESC
+                         LIMIT %s OFFSET %s''',
+                         (f"%{brand}%", f"%{brand}%", limit, offset))
+        else:
+            c.execute('''SELECT * FROM products 
+                         WHERE is_active = true
+                         ORDER BY updated_price DESC
+                         LIMIT %s OFFSET %s''',
+                         (limit, offset))
+        
+        results = c.fetchall()
+        
+        # Get total count
+        if category:
+            c.execute('SELECT COUNT(*) FROM products WHERE is_active = true AND menu ILIKE %s', (f"%{category}%",))
+        elif brand:
+            c.execute('SELECT COUNT(*) FROM products WHERE is_active = true AND (brand ILIKE %s OR brand_en ILIKE %s)', (f"%{brand}%", f"%{brand}%"))
+        else:
+            c.execute('SELECT COUNT(*) FROM products WHERE is_active = true')
+        
+        total = c.fetchone()['count']
+        
+        conn.close()
+        return results, total
+    except Exception as e:
+        print(f"get_all_products error: {e}")
+        return [], 0
 
 def get_product_by_id(product_id):
     conn = get_db()
@@ -395,10 +403,29 @@ def serve_audio():
 def products_page():
     return send_from_directory('.', 'products.html')
 
+# Health check
+@app.route('/api/health')
+def health_check():
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('SELECT 1')
+        conn.close()
+        return jsonify({'status': 'ok', 'db': 'connected'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'db': str(e)}), 500
+
 # Products API Routes
 @app.route('/api/products', methods=['GET'])
 def get_products_api():
     try:
+        # Try to init/import products first
+        try:
+            init_products_table()
+            import_products_from_csv()
+        except Exception as init_err:
+            print(f"Products init: {init_err}")
+        
         limit = int(request.args.get('limit', 50))
         offset = int(request.args.get('offset', 0))
         search = request.args.get('search', '')
@@ -421,6 +448,7 @@ def get_products_api():
         })
     except Exception as e:
         print(f"Products API error: {e}")
+        return jsonify({'error': str(e), 'products': [], 'total': 0}), 500
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/products/categories', methods=['GET'])
@@ -599,8 +627,11 @@ HOW TO RESPOND:
 - Use **bold** for product names and important info
 - Always end with a question to keep the conversation going
 - Sign with: - SaleBorg 🛍️
+- ONLY respond with TEXT - never try to analyze or describe images
+- Never mention image URLs or try to view images
 
 IMPORTANT:
+- NEVER try to analyze images - this is text-only mode
 - Search the products database based on user queries
 - When user asks for products, include search terms so the API can find relevant items
 - Ask about preferences: skin type, hair type, budget, occasion, etc.
