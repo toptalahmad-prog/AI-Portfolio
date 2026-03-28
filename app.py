@@ -322,8 +322,12 @@ def get_api_key():
 def clean_message(content):
     if not content:
         return ""
+    import re
     content = str(content)
     content = content.replace('\x00', '')
+    # Remove image URLs to prevent AI from trying to process them
+    content = re.sub(r'https?://[^\s]+\.(png|jpg|jpeg|gif|webp|svg)', '[IMAGE]', content, flags=re.IGNORECASE)
+    content = re.sub(r'data:image/[^\s]+', '[IMAGE]', content)
     content = ''.join(char for char in content if ord(char) < 65536)
     return content[:2000]
 
@@ -410,10 +414,31 @@ def health_check():
         conn = get_db()
         c = conn.cursor()
         c.execute('SELECT 1')
+        c.execute('SELECT COUNT(*) FROM products')
+        count = c.fetchone()[0]
         conn.close()
-        return jsonify({'status': 'ok', 'db': 'connected'})
+        return jsonify({'status': 'ok', 'db': 'connected', 'products': count})
     except Exception as e:
         return jsonify({'status': 'error', 'db': str(e)}), 500
+
+# Force reimport products
+@app.route('/api/reimport', methods=['POST'])
+def reimport_products():
+    try:
+        # Drop and recreate table
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('DROP TABLE IF EXISTS products')
+        conn.commit()
+        conn.close()
+        
+        # Reinit and import
+        init_products_table()
+        import_products_from_csv()
+        
+        return jsonify({'success': True, 'message': 'Products reimported'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # Products API Routes
 @app.route('/api/products', methods=['GET'])
@@ -686,7 +711,7 @@ def saleborg_chat():
                 'Content-Type': 'application/json'
             },
             json={
-                'model': 'llama-3.1-70b-versatile',
+                'model': 'llama-3.1-8b-instant',
                 'messages': formatted_messages,
                 'temperature': 0.8,
                 'max_tokens': 400
