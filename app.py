@@ -12,6 +12,28 @@ app.secret_key = os.environ.get('SECRET_KEY', 'jogi-portfolio-secret-key-xynova-
 
 DRIVE_KEY_URL = 'https://drive.google.com/uc?export=download&id=1FMx7iCqGGOXyRMiVcCAzAJYzUY6gLFlC'
 
+# Telegram Bot Configuration
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
+
+def send_telegram_message(message):
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        print("Telegram not configured - set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID")
+        return False
+    
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        data = {
+            'chat_id': TELEGRAM_CHAT_ID,
+            'text': message,
+            'parse_mode': 'HTML'
+        }
+        response = requests.post(url, json=data, timeout=10)
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Telegram error: {e}")
+        return False
+
 ADMIN_USERNAME = "RamtaxJOGI"
 ADMIN_PASSWORD = "AhmadxRamtaxJOGI@123"
 DB_FILE = 'portfolio.db'
@@ -263,6 +285,11 @@ def book_meeting():
                 return jsonify({'success': False, 'error': 'Slot already booked'}), 400
         
         save_meeting(name, email, date, time, topic or 'General Discussion')
+        
+        # Send Telegram notification
+        telegram_msg = f"📅 <b>New Meeting Booked!</b>\n\n👤 <b>Name:</b> {name}\n📧 <b>Email:</b> {email}\n📆 <b>Date:</b> {date}\n⏰ <b>Time:</b> {time}\n💼 <b>Topic:</b> {topic or 'General Discussion'}"
+        send_telegram_message(telegram_msg)
+        
         return jsonify({'success': True})
     except Exception as e:
         print(f'Booking error: {e}')
@@ -364,6 +391,11 @@ def contact():
             return jsonify({'success': False, 'error': 'All fields are required'}), 400
         
         save_contact(name, email, message)
+        
+        # Send Telegram notification
+        telegram_msg = f"📬 <b>New Contact Message</b>\n\n👤 <b>Name:</b> {name}\n📧 <b>Email:</b> {email}\n💬 <b>Message:</b>\n{message}"
+        send_telegram_message(telegram_msg)
+        
         return jsonify({'success': True})
     except Exception as e:
         print(f'Contact error: {e}')
