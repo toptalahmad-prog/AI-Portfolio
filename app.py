@@ -36,6 +36,10 @@ def send_telegram_message(message):
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', '')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '')
 
+# Feature flags
+PRODUCTS_ENABLED = os.environ.get('PRODUCTS_ENABLED', 'false').lower() == 'true'
+SALEBORG_ENABLED = os.environ.get('SALEBORG_ENABLED', 'false').lower() == 'true'
+
 def get_db():
     conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
     return conn
@@ -405,6 +409,8 @@ def serve_audio():
 # Products Page
 @app.route('/products')
 def products_page():
+    if not PRODUCTS_ENABLED:
+        return "Products feature is currently disabled", 503
     return send_from_directory('.', 'products.html')
 
 # Health check
@@ -671,6 +677,9 @@ Response: "Here are some amazing lip glosses under 20,000 IQD! These are our top
 
 @app.route('/api/saleborg', methods=['POST'])
 def saleborg_chat():
+    if not SALEBORG_ENABLED:
+        return jsonify({'error': 'SaleBorg is currently disabled'}), 503
+    
     if request.method != 'POST':
         return jsonify({'error': 'Method not allowed'}), 405
     
