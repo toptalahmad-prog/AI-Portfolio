@@ -422,7 +422,7 @@ def health_check():
         return jsonify({'status': 'error', 'db': str(e)}), 500
 
 # Force reimport products
-@app.route('/api/reimport', methods=['POST'])
+@app.route('/api/reimport', methods=['GET', 'POST'])
 def reimport_products():
     try:
         # Drop and recreate table
