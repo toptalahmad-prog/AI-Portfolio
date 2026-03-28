@@ -44,6 +44,17 @@ def get_db():
     conn = psycopg2.connect(db_url)
     return conn
 
+def clean_message(content):
+    if not content:
+        return ""
+    import re
+    content = str(content)
+    content = content.replace('\x00', '')
+    # Remove image URLs to prevent AI from trying to process them
+    content = re.sub(r'https?://[^\s]+\.(png|jpg|jpeg|gif|webp|svg)', '[IMAGE]', content, flags=re.IGNORECASE)
+    content = re.sub(r'data:image/[^\s]+', '[IMAGE]', content)
+    return content[:2000]
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
