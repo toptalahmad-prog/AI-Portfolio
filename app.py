@@ -2,10 +2,11 @@ from flask import Flask, request, jsonify, send_from_directory, session, redirec
 import requests
 import os
 import time
-import sqlite3
 import json
 from datetime import datetime
 from functools import wraps
+import psycopg2
+import psycopg2.extras
 
 app = Flask(__name__, static_folder='.')
 app.secret_key = os.environ.get('SECRET_KEY', 'jogi-portfolio-secret-key-xynova-2026')
@@ -36,36 +37,10 @@ def send_telegram_message(message):
 
 ADMIN_USERNAME = "RamtaxJOGI"
 ADMIN_PASSWORD = "AhmadxRamtaxJOGI@123"
-DB_FILE = 'portfolio.db'
 
-# Database setup
-def init_db():
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS contacts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        message TEXT NOT NULL,
-        date TEXT NOT NULL,
-        time TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS meetings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        date TEXT NOT NULL,
-        time TEXT NOT NULL,
-        topic TEXT,
-        status TEXT DEFAULT 'scheduled',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )''')
-    conn.commit()
-    conn.close()
-
-# Initialize database on startup
-init_db()
+def get_db():
+    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+    return conn
 
 # Default available slots (can be customized)
 AVAILABLE_SLOTS = {
@@ -178,41 +153,42 @@ def clean_message(content):
     content = ''.join(char for char in content if ord(char) < 65536)
     return content[:2000]
 
-# Contact functions using SQLite
+# Contact functions using PostgreSQL
 def save_contact(name, email, message):
     now = datetime.now()
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db()
     c = conn.cursor()
-    c.execute('INSERT INTO contacts (name, email, message, date, time) VALUES (?, ?, ?, ?, ?)',
+    c.execute('INSERT INTO contacts (name, email, message, date, time) VALUES (%s, %s, %s, %s, %s)',
               (name, email, message, now.strftime('%Y-%m-%d'), now.strftime('%H:%M:%S')))
     conn.commit()
+    c.close()
     conn.close()
 
 def get_contacts():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
+    conn = get_db()
+    c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     c.execute('SELECT name, email, message, date, time FROM contacts ORDER BY id DESC')
     rows = c.fetchall()
+    c.close()
     conn.close()
     return [dict(row) for row in rows]
 
-# Meeting functions using SQLite
+# Meeting functions using PostgreSQL
 def save_meeting(name, email, date, time, topic):
-    now = datetime.now()
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db()
     c = conn.cursor()
-    c.execute('INSERT INTO meetings (name, email, date, time, topic, status) VALUES (?, ?, ?, ?, ?, ?)',
+    c.execute('INSERT INTO meetings (name, email, date, time, topic, status) VALUES (%s, %s, %s, %s, %s, %s)',
               (name, email, date, time, topic, 'scheduled'))
     conn.commit()
+    c.close()
     conn.close()
 
 def get_meetings():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
+    conn = get_db()
+    c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     c.execute('SELECT name, email, date, time, topic, status FROM meetings ORDER BY id DESC')
     rows = c.fetchall()
+    c.close()
     conn.close()
     return [dict(row) for row in rows]
 
