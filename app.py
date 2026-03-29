@@ -1004,6 +1004,10 @@ def chatbot():
 def booking():
     return send_from_directory('.', 'book.html')
 
+@app.route('/JogiWorld')
+def jogiworld():
+    return send_from_directory('.', 'jogiworld.html')
+
 @app.route('/<path:filename>')
 def serve_static(filename):
     if filename.endswith('.mp3'):

@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JogiWorld - Immersive 3D Experience</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #00f0ff;
+            --secondary: #ff00ff;
+            --tertiary: #00ff88;
+            --dark: #000000;
+        }
+        
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* HUD Overlay */
+        .hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        /* Top Bar */
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+        }
+        
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 240, 255, 0.5);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            pointer-events: auto;
+        }
+        
+        .nav-links a {
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+            text-shadow: 0 0 20px var(--primary);
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        /* Controls Info */
+        .controls-info {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid rgba(0,240,255,0.3);
+            border-radius: 10px;
+            padding: 15px 20px;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.85rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .controls-info h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+        }
+        
+        .controls-info p {
+            margin: 5px 0;
+            opacity: 0.7;
+        }
+        
+        .controls-info span {
+            color: var(--tertiary);
+            font-weight: 600;
+        }
+        
+        /* Crosshair */
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+        }
+        
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+        
+        .crosshair::before {
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+        
+        .crosshair::after {
+            left: 50%;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            transform: translateX(-50%);
+        }
+        
+        .crosshair.active {
+            animation: pulse 0.5s ease infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+        
+        /* Info Panel */
+        .info-panel {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 300px;
+            background: rgba(0,0,0,0.85);
+            border: 1px solid rgba(0,240,255,0.4);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(15px);
+            display: none;
+            pointer-events: auto;
+        }
+        
+        .info-panel.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-50%) translateX(20px); }
+            to { opacity: 1; transform: translateY(-50%) translateX(0); }
+        }
+        
+        .info-panel h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px var(--primary);
+        }
+        
+        .info-panel p {
+            color: rgba(255,255,255,0.8);
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .info-panel .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .info-panel .close-btn:hover {
+            transform: rotate(90deg);
+        }
+        
+        .info-panel .action-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            text-decoration: none;
+            text-align: center;
+        }
+        
+        .info-panel .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,240,255,0.4);
+        }
+        
+        /* Loading Screen */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+        
+        .loading.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { filter: drop-shadow(0 0 20px var(--primary)); }
+            50% { filter: drop-shadow(0 0 40px var(--secondary)); }
+        }
+        
+        .loading-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .loading-bar-fill {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s;
+        }
+        
+        /* Instructions */
+        .instructions {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            text-align: right;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8rem;
+        }
+        
+        .instructions kbd {
+            background: rgba(255,255,255,0.1);
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin: 0 3px;
+        }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .top-bar {
+                padding: 15px 20px;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .controls-info {
+                bottom: 20px;
+                left: 20px;
+                padding: 10px 15px;
+                font-size: 0.75rem;
+            }
+            
+            .info-panel {
+                right: 10px;
+                left: 10px;
+                width: auto;
+                top: auto;
+                bottom: 100px;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading" id="loading">
+        <h1>JOGIWORLD</h1>
+        <div class="loading-bar">
+            <div class="loading-bar-fill" id="loadingFill"></div>
+        </div>
+    </div>
+    
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+    
+    <!-- HUD -->
+    <div class="hud">
+        <div class="top-bar">
+            <div class="logo">JOGIWORLD</div>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/chatbot">JOGI AI</a>
+                <a href="/book">Book Meeting</a>
+                <a href="/ahmadAdmin">Admin</a>
+            </div>
+        </div>
+        
+        <div class="crosshair" id="crosshair"></div>
+        
+        <div class="controls-info">
+            <h4>CONTROLS</h4>
+            <p><span>W A S D</span> - Move</p>
+            <p><span>MOUSE</span> - Look Around</p>
+            <p><span>SHIFT</span> - Sprint</p>
+            <p><span>CLICK</span> - Interact</p>
+            <p><span>ESC</span> - Release Mouse</p>
+        </div>
+        
+        <div class="info-panel" id="infoPanel">
+            <button class="close-btn" onclick="closeInfoPanel()">×</button>
+            <h3 id="infoTitle">Object Name</h3>
+            <p id="infoDescription">Description goes here...</p>
+            <a href="#" class="action-btn" id="infoAction">Learn More</a>
+        </div>
+        
+        <div class="instructions">
+            Press <kbd>ESC</kbd> to release mouse • Click objects to interact
+        </div>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    
+    <script>
+        // Scene Setup
+        let scene, camera, renderer, controls;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let prevTime = performance.now();
+        let raycaster, mouse;
+        let interactableObjects = [];
+        let isLocked = false;
+        
+        // Colors
+        const primaryColor = 0x00f0ff;
+        const secondaryColor = 0xff00ff;
+        const tertiaryColor = 0x00ff88;
+        
+        // Object Data
+        const objectData = {
+            'Xynova Core': {
+                title: 'XYNOVA CORE',
+                description: 'The central hub of Xynova - building metaverse platforms, VR/AR experiences, and Web3 solutions.',
+                link: '/'
+            },
+            'Metaverse Engine': {
+                title: 'METAVERSE ENGINE',
+                description: '5+ years of Immersive Tech experience. Building digital universes and virtual reality experiences.',
+                link: '/#expertise'
+            },
+            'AI Intelligence': {
+                title: 'AI INTELLIGENCE',
+                description: 'Smart automation solutions powered by cutting-edge AI technology.',
+                link: '/#expertise'
+            },
+            'Web3 Hub': {
+                title: 'WEB3 HUB',
+                description: 'Blockchain development, NFT platforms, and decentralized applications.',
+                link: '/#expertise'
+            },
+            'Game Dev': {
+                title: 'GAME DEVELOPMENT',
+                description: 'Creating awesome games with Unity, JavaScript, and modern game engines.',
+                link: '/#projects'
+            },
+            'VR/AR Lab': {
+                title: 'VR/AR LAB',
+                description: 'Virtual and Augmented Reality experiences that push boundaries.',
+                link: '/#projects'
+            },
+            'Book Meeting': {
+                title: 'BOOK A MEETING',
+                description: 'Schedule a call with Muhammad Ahmad Humayoun to discuss your project.',
+                link: '/book'
+            },
+            'Contact': {
+                title: 'GET IN TOUCH',
+                description: 'Ready to start your project? Let\'s talk!',
+                link: '/#contact'
+            }
+        };
+        
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.015);
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 2, 10);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            // Controls
+            controls = new THREE.PointerLockControls(camera, document.body);
+            
+            // Raycaster
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            
+            // Create World
+            createEnvironment();
+            createObjects();
+            createParticles();
+            createGrid();
+            
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x111111);
+            scene.add(ambientLight);
+            
+            // Point lights
+            const light1 = new THREE.PointLight(primaryColor, 2, 50);
+            light1.position.set(10, 10, 10);
+            scene.add(light1);
+            
+            const light2 = new THREE.PointLight(secondaryColor, 2, 50);
+            light2.position.set(-10, 10, -10);
+            scene.add(light2);
+            
+            // Events
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('click', onClick);
+            document.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('resize', onWindowResize);
+            
+            // Click to lock
+            document.addEventListener('click', () => {
+                if (!isLocked) controls.lock();
+            });
+            
+            controls.addEventListener('lock', () => {
+                isLocked = true;
+                document.getElementById('crosshair').style.display = 'block';
+            });
+            
+            controls.addEventListener('unlock', () => {
+                isLocked = false;
+                document.getElementById('crosshair').style.display = 'none';
+            });
+            
+            // Loading
+            setTimeout(() => {
+                document.getElementById('loadingFill').style.width = '100%';
+                setTimeout(() => {
+                    document.getElementById('loading').classList.add('hide');
+                }, 500);
+            }, 1000);
+            
+            // Animate
+            animate();
+        }
+        
+        function createEnvironment() {
+            // Ground
+            const groundGeo = new THREE.PlaneGeometry(200, 200);
+            const groundMat = new THREE.MeshStandardMaterial({ 
+                color: 0x050510,
+                metalness: 0.8,
+                roughness: 0.4
+            });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            // Skybox - Stars
+            const starsGeo = new THREE.BufferGeometry();
+            const starsCount = 5000;
+            const posArray = new Float32Array(starsCount * 3);
+            
+            for(let i = 0; i < starsCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 200;
+            }
+            
+            starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const starsMat = new THREE.PointsMaterial({
+                size: 0.1,
+                color: primaryColor,
+                transparent: true,
+                opacity: 0.8
+            });
+            const stars = new THREE.Points(starsGeo, starsMat);
+            scene.add(stars);
+        }
+        
+        function createObjects() {
+            // Central Hub - Xynova
+            const hubGeo = new THREE.IcosahedronGeometry(2, 1);
+            const hubMat = new THREE.MeshStandardMaterial({
+                color: primaryColor,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: primaryColor,
+                emissiveIntensity: 0.3,
+                wireframe: false
+            });
+            const hub = new THREE.Mesh(hubGeo, hubMat);
+            hub.position.set(0, 3, 0);
+            hub.userData = { name: 'Xynova Core' };
+            scene.add(hub);
+            interactableObjects.push(hub);
+            
+            // Wireframe wrapper
+            const hubWireGeo = new THREE.IcosahedronGeometry(2.2, 1);
+            const hubWireMat = new THREE.MeshBasicMaterial({
+                color: primaryColor,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.3
+            });
+            const hubWire = new THREE.Mesh(hubWireGeo, hubWireMat);
+            hubWire.position.copy(hub.position);
+            scene.add(hubWire);
+            
+            // Floating Rings
+            for (let i = 0; i < 3; i++) {
+                const ringGeo = new THREE.TorusGeometry(3 + i * 0.5, 0.02, 16, 100);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: i % 2 === 0 ? primaryColor : secondaryColor,
+                    transparent: true,
+                    opacity: 0.5
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.position.set(0, 3, 0);
+                ring.rotation.x = Math.PI / 2 + i * 0.3;
+                ring.rotation.y = i * 0.5;
+                scene.add(ring);
+            }
+            
+            // Object Platforms
+            const platforms = [
+                { pos: [-8, 2, -5], color: primaryColor, name: 'Metaverse Engine' },
+                { pos: [8, 2, -5], color: secondaryColor, name: 'VR/AR Lab' },
+                { pos: [-8, 2, 5], color: tertiaryColor, name: 'Web3 Hub' },
+                { pos: [8, 2, 5], color: 0xffaa00, name: 'Game Dev' },
+                { pos: [0, 2, -12], color: primaryColor, name: 'AI Intelligence' },
+                { pos: [0, 2, 12], color: secondaryColor, name: 'Book Meeting' }
+            ];
+            
+            platforms.forEach((p, i) => {
+                // Platform base
+                const platGeo = new THREE.CylinderGeometry(1.5, 2, 0.3, 6);
+                const platMat = new THREE.MeshStandardMaterial({
+                    color: p.color,
+                    metalness: 0.8,
+                    roughness: 0.2,
+                    emissive: p.color,
+                    emissiveIntensity: 0.2
+                });
+                const platform = new THREE.Mesh(platGeo, platMat);
+                platform.position.set(...p.pos);
+                scene.add(platform);
+                
+                // Floating object
+                const objGeo = new THREE.OctahedronGeometry(0.8, 0);
+                const objMat = new THREE.MeshStandardMaterial({
+                    color: p.color,
+                    metalness: 0.9,
+                    roughness: 0.1,
+                    emissive: p.color,
+                    emissiveIntensity: 0.5
+                });
+                const obj = new THREE.Mesh(objGeo, objMat);
+                obj.position.set(p.pos[0], p.pos[1] + 1.5, p.pos[2]);
+                obj.userData = { name: p.name };
+                scene.add(obj);
+                interactableObjects.push(obj);
+                
+                // Glow sphere
+                const glowGeo = new THREE.SphereGeometry(1, 32, 32);
+                const glowMat = new THREE.MeshBasicMaterial({
+                    color: p.color,
+                    transparent: true,
+                    opacity: 0.1
+                });
+                const glow = new THREE.Mesh(glowGeo, glowMat);
+                glow.position.copy(obj.position);
+                scene.add(glow);
+            });
+            
+            // Welcome Platform
+            const welcomePlat = createPlatform([0, 1.5, 8], 'Contact');
+            scene.add(welcomePlat);
+            interactableObjects.push(welcomePlat.children[1]);
+        }
+        
+        function createPlatform(position, name) {
+            const group = new THREE.Group();
+            
+            // Base
+            const baseGeo = new THREE.BoxGeometry(3, 0.2, 3);
+            const baseMat = new THREE.MeshStandardMaterial({
+                color: 0x222233,
+                metalness: 0.9,
+                roughness: 0.3
+            });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            group.add(base);
+            
+            // Top object - floating cube
+            const topGeo = new THREE.BoxGeometry(1, 1, 1);
+            const topMat = new THREE.MeshStandardMaterial({
+                color: primaryColor,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: primaryColor,
+                emissiveIntensity: 0.5
+            });
+            const top = new THREE.Mesh(topGeo, topMat);
+            top.position.y = 1.5;
+            top.userData = { name: name };
+            group.add(top);
+            
+            group.position.set(...position);
+            return group;
+        }
+        
+        function createParticles() {
+            // Floating particles
+            const particlesGeo = new THREE.BufferGeometry();
+            const particlesCount = 1000;
+            const posArray = new Float32Array(particlesCount * 3);
+            
+            for(let i = 0; i < particlesCount * 3; i += 3) {
+                posArray[i] = (Math.random() - 0.5) * 60;
+                posArray[i + 1] = Math.random() * 20 - 2;
+                posArray[i + 2] = (Math.random() - 0.5) * 60;
+            }
+            
+            particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            
+            const particlesMat = new THREE.PointsMaterial({
+                size: 0.05,
+                color: primaryColor,
+                transparent: true,
+                opacity: 0.6
+            });
+            
+            const particles = new THREE.Points(particlesGeo, particlesMat);
+            scene.add(particles);
+        }
+        
+        function createGrid() {
+            // Grid floor
+            const gridHelper = new THREE.GridHelper(100, 50, primaryColor, 0x111122);
+            gridHelper.position.y = -1.9;
+            gridHelper.material.opacity = 0.3;
+            gridHelper.material.transparent = true;
+            scene.add(gridHelper);
+        }
+        
+        function onKeyDown(event) {
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'ShiftLeft': 
+                case 'ShiftRight': velocity.multiplyScalar(2); break;
+            }
+        }
+        
+        function onKeyUp(event) {
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyD': moveRight = false; break;
+            }
+        }
+        
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+        
+        function onClick() {
+            if (!isLocked) return;
+            
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = raycaster.intersectObjects(interactableObjects, true);
+            
+            if (intersects.length > 0 && intersects[0].distance < 15) {
+                let obj = intersects[0].object;
+                // Find parent with userData
+                while (obj && !obj.userData?.name) {
+                    obj = obj.parent;
+                }
+                
+                if (obj?.userData?.name) {
+                    showInfoPanel(obj.userData.name);
+                }
+            }
+        }
+        
+        function showInfoPanel(name) {
+            const data = objectData[name];
+            if (!data) return;
+            
+            document.getElementById('infoTitle').textContent = data.title;
+            document.getElementById('infoDescription').textContent = data.description;
+            document.getElementById('infoAction').href = data.link;
+            document.getElementById('infoPanel').classList.add('show');
+            document.getElementById('crosshair').classList.add('active');
+        }
+        
+        function closeInfoPanel() {
+            document.getElementById('infoPanel').classList.remove('show');
+            document.getElementById('crosshair').classList.remove('active');
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+            
+            // Movement
+            if (isLocked) {
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+                
+                if (moveForward || moveBackward) velocity.z -= direction.z * 50.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 50.0 * delta;
+                
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+            }
+            
+            // Animate objects
+            scene.children.forEach(child => {
+                if (child.geometry && child.userData) {
+                    child.rotation.x += 0.01;
+                    child.rotation.y += 0.01;
+                    child.position.y += Math.sin(time * 0.002 + child.position.x) * 0.002;
+                }
+            });
+            
+            // Rotate rings
+            scene.children.forEach(child => {
+                if (child.geometry?.type === 'TorusGeometry') {
+                    child.rotation.z += 0.005;
+                }
+            });
+            
+            // Pulse central hub
+            const hub = scene.children.find(c => c.geometry?.type === 'IcosahedronGeometry' && c.userData?.name);
+            if (hub) {
+                const scale = 1 + Math.sin(time * 0.002) * 0.1;
+                hub.scale.set(scale, scale, scale);
+            }
+            
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+        
+        // Initialize
+        init();
+    </script>
+</body>
+</html>
