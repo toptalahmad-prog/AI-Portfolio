@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JogiWorld - Immersive 3D Experience</title>
+    <title>JogiWorld - Third Person Experience</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
         
@@ -34,7 +34,6 @@
             height: 100%;
         }
         
-        /* HUD Overlay */
         .hud {
             position: fixed;
             top: 0;
@@ -45,7 +44,6 @@
             z-index: 100;
         }
         
-        /* Top Bar */
         .top-bar {
             position: absolute;
             top: 0;
@@ -65,7 +63,6 @@
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(0, 240, 255, 0.5);
         }
         
         .nav-links {
@@ -82,30 +79,12 @@
             text-transform: uppercase;
             letter-spacing: 2px;
             transition: all 0.3s;
-            position: relative;
         }
         
         .nav-links a:hover {
             color: var(--primary);
-            text-shadow: 0 0 20px var(--primary);
         }
         
-        .nav-links a::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: var(--primary);
-            transition: width 0.3s;
-        }
-        
-        .nav-links a:hover::after {
-            width: 100%;
-        }
-        
-        /* Controls Info */
         .controls-info {
             position: absolute;
             bottom: 30px;
@@ -123,12 +102,6 @@
             color: var(--primary);
             margin-bottom: 10px;
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.9rem;
-        }
-        
-        .controls-info p {
-            margin: 5px 0;
-            opacity: 0.7;
         }
         
         .controls-info span {
@@ -136,15 +109,15 @@
             font-weight: 600;
         }
         
-        /* Crosshair */
         .crosshair {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 30px;
-            height: 30px;
+            width: 20px;
+            height: 20px;
             pointer-events: none;
+            opacity: 0.7;
         }
         
         .crosshair::before,
@@ -152,7 +125,6 @@
             content: '';
             position: absolute;
             background: var(--primary);
-            box-shadow: 0 0 10px var(--primary);
         }
         
         .crosshair::before {
@@ -172,22 +144,22 @@
         }
         
         .crosshair.active {
+            opacity: 1;
             animation: pulse 0.5s ease infinite;
         }
         
         @keyframes pulse {
             0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.2); }
+            50% { transform: translate(-50%, -50%) scale(1.3); }
         }
         
-        /* Info Panel */
         .info-panel {
             position: absolute;
             right: 30px;
             top: 50%;
             transform: translateY(-50%);
-            width: 300px;
-            background: rgba(0,0,0,0.85);
+            width: 320px;
+            background: rgba(0,0,0,0.9);
             border: 1px solid rgba(0,240,255,0.4);
             border-radius: 15px;
             padding: 25px;
@@ -211,7 +183,6 @@
             font-size: 1.4rem;
             color: var(--primary);
             margin-bottom: 15px;
-            text-shadow: 0 0 20px var(--primary);
         }
         
         .info-panel p {
@@ -229,11 +200,6 @@
             color: var(--secondary);
             font-size: 1.5rem;
             cursor: pointer;
-            transition: transform 0.3s;
-        }
-        
-        .info-panel .close-btn:hover {
-            transform: rotate(90deg);
         }
         
         .info-panel .action-btn {
@@ -246,13 +212,10 @@
             color: #000;
             font-family: 'Orbitron', sans-serif;
             font-weight: 700;
-            font-size: 0.9rem;
             cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s;
             text-decoration: none;
             text-align: center;
+            text-transform: uppercase;
         }
         
         .info-panel .action-btn:hover {
@@ -260,7 +223,6 @@
             box-shadow: 0 10px 30px rgba(0,240,255,0.4);
         }
         
-        /* Loading Screen */
         .loading {
             position: fixed;
             top: 0;
@@ -288,12 +250,6 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 30px;
-            animation: glow 2s ease-in-out infinite;
-        }
-        
-        @keyframes glow {
-            0%, 100% { filter: drop-shadow(0 0 20px var(--primary)); }
-            50% { filter: drop-shadow(0 0 40px var(--secondary)); }
         }
         
         .loading-bar {
@@ -311,53 +267,42 @@
             transition: width 0.3s;
         }
         
-        /* Instructions */
-        .instructions {
+        .click-to-start {
             position: absolute;
-            bottom: 30px;
-            right: 30px;
-            text-align: right;
-            color: rgba(255,255,255,0.5);
-            font-size: 0.8rem;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: auto;
+            cursor: pointer;
         }
         
-        .instructions kbd {
-            background: rgba(255,255,255,0.1);
-            padding: 3px 8px;
-            border-radius: 4px;
-            margin: 0 3px;
+        .click-to-start h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+            animation: glow 2s ease-in-out infinite;
         }
         
-        /* Mobile */
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 20px var(--primary); }
+            50% { text-shadow: 0 0 40px var(--secondary); }
+        }
+        
+        .click-to-start p {
+            color: rgba(255,255,255,0.6);
+        }
+
         @media (max-width: 768px) {
-            .top-bar {
-                padding: 15px 20px;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-            
-            .controls-info {
-                bottom: 20px;
-                left: 20px;
-                padding: 10px 15px;
-                font-size: 0.75rem;
-            }
-            
-            .info-panel {
-                right: 10px;
-                left: 10px;
-                width: auto;
-                top: auto;
-                bottom: 100px;
-                transform: none;
-            }
+            .top-bar { padding: 15px 20px; }
+            .nav-links { display: none; }
+            .controls-info { bottom: 20px; left: 20px; padding: 10px 15px; font-size: 0.75rem; }
+            .info-panel { right: 10px; left: 10px; width: auto; top: auto; bottom: 100px; transform: none; }
         }
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
     <div class="loading" id="loading">
         <h1>JOGIWORLD</h1>
         <div class="loading-bar">
@@ -365,10 +310,8 @@
         </div>
     </div>
     
-    <!-- 3D Canvas -->
     <div id="canvas-container"></div>
     
-    <!-- HUD -->
     <div class="hud">
         <div class="top-bar">
             <div class="logo">JOGIWORLD</div>
@@ -380,15 +323,20 @@
             </div>
         </div>
         
+        <div class="click-to-start" id="clickToStart">
+            <h2>CLICK TO START</h2>
+            <p>Use WASD to move • Mouse to look • Click objects to interact</p>
+        </div>
+        
         <div class="crosshair" id="crosshair"></div>
         
         <div class="controls-info">
             <h4>CONTROLS</h4>
-            <p><span>W A S D</span> - Move</p>
-            <p><span>MOUSE</span> - Look Around</p>
+            <p><span>W A S D</span> - Move Character</p>
+            <p><span>MOUSE</span> - Camera Look</p>
             <p><span>SHIFT</span> - Sprint</p>
             <p><span>CLICK</span> - Interact</p>
-            <p><span>ESC</span> - Release Mouse</p>
+            <p><span>ESC</span> - Pause</p>
         </div>
         
         <div class="info-panel" id="infoPanel">
@@ -397,151 +345,156 @@
             <p id="infoDescription">Description goes here...</p>
             <a href="#" class="action-btn" id="infoAction">Learn More</a>
         </div>
-        
-        <div class="instructions">
-            Press <kbd>ESC</kbd> to release mouse • Click objects to interact
-        </div>
     </div>
 
-    <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
     
     <script>
         // Scene Setup
         let scene, camera, renderer, controls;
+        let player, playerMixer;
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
         let velocity = new THREE.Vector3();
         let direction = new THREE.Vector3();
         let prevTime = performance.now();
-        let raycaster, mouse;
+        let raycaster;
         let interactableObjects = [];
         let isLocked = false;
+        let cameraAngle = 0;
+        let cameraPitch = 0.3;
+        let cameraDistance = 8;
         
-        // Colors
         const primaryColor = 0x00f0ff;
         const secondaryColor = 0xff00ff;
         const tertiaryColor = 0x00ff88;
         
-        // Object Data
         const objectData = {
-            'Xynova Core': {
-                title: 'XYNOVA CORE',
-                description: 'The central hub of Xynova - building metaverse platforms, VR/AR experiences, and Web3 solutions.',
-                link: '/'
-            },
-            'Metaverse Engine': {
-                title: 'METAVERSE ENGINE',
-                description: '5+ years of Immersive Tech experience. Building digital universes and virtual reality experiences.',
-                link: '/#expertise'
-            },
-            'AI Intelligence': {
-                title: 'AI INTELLIGENCE',
-                description: 'Smart automation solutions powered by cutting-edge AI technology.',
-                link: '/#expertise'
-            },
-            'Web3 Hub': {
-                title: 'WEB3 HUB',
-                description: 'Blockchain development, NFT platforms, and decentralized applications.',
-                link: '/#expertise'
-            },
-            'Game Dev': {
-                title: 'GAME DEVELOPMENT',
-                description: 'Creating awesome games with Unity, JavaScript, and modern game engines.',
-                link: '/#projects'
-            },
-            'VR/AR Lab': {
-                title: 'VR/AR LAB',
-                description: 'Virtual and Augmented Reality experiences that push boundaries.',
-                link: '/#projects'
-            },
-            'Book Meeting': {
-                title: 'BOOK A MEETING',
-                description: 'Schedule a call with Muhammad Ahmad Humayoun to discuss your project.',
-                link: '/book'
-            },
-            'Contact': {
-                title: 'GET IN TOUCH',
-                description: 'Ready to start your project? Let\'s talk!',
-                link: '/#contact'
-            }
+            'Xynova Core': { title: 'XYNOVA', description: 'Building metaverse platforms, VR/AR, Web3 solutions.', link: '/' },
+            'Metaverse': { title: 'METAVERSE', description: '5+ years of immersive tech experience.', link: '/#expertise' },
+            'VR/AR': { title: 'VR/AR LAB', description: 'Virtual and augmented reality experiences.', link: '/#projects' },
+            'Web3': { title: 'WEB3 HUB', description: 'Blockchain, NFTs, and decentralized apps.', link: '/#expertise' },
+            'Game Dev': { title: 'GAME DEV', description: 'Creating awesome games with Unity.', link: '/#projects' },
+            'AI': { title: 'AI INTELLIGENCE', description: 'Smart automation solutions.', link: '/#expertise' },
+            'Book': { title: 'BOOK MEETING', description: 'Schedule a call with Muhammad Ahmad.', link: '/book' },
+            'Contact': { title: 'GET IN TOUCH', description: 'Let\'s work together!', link: '/#contact' }
         };
         
         function init() {
-            // Scene
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x000000, 0.015);
+            scene.fog = new THREE.FogExp2(0x000000, 0.012);
             
-            // Camera
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 2, 10);
             
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             document.getElementById('canvas-container').appendChild(renderer.domElement);
             
-            // Controls
-            controls = new THREE.PointerLockControls(camera, document.body);
-            
-            // Raycaster
             raycaster = new THREE.Raycaster();
-            mouse = new THREE.Vector2();
             
-            // Create World
+            createPlayer();
             createEnvironment();
-            createObjects();
+            createInteractiveObjects();
             createParticles();
             createGrid();
             
             // Lights
-            const ambientLight = new THREE.AmbientLight(0x111111);
-            scene.add(ambientLight);
+            const ambient = new THREE.AmbientLight(0x111111);
+            scene.add(ambient);
             
-            // Point lights
-            const light1 = new THREE.PointLight(primaryColor, 2, 50);
-            light1.position.set(10, 10, 10);
+            const light1 = new THREE.PointLight(primaryColor, 1.5, 100);
+            light1.position.set(15, 20, 15);
             scene.add(light1);
             
-            const light2 = new THREE.PointLight(secondaryColor, 2, 50);
-            light2.position.set(-10, 10, -10);
+            const light2 = new THREE.PointLight(secondaryColor, 1.5, 100);
+            light2.position.set(-15, 20, -15);
             scene.add(light2);
             
             // Events
             document.addEventListener('keydown', onKeyDown);
             document.addEventListener('keyup', onKeyUp);
-            document.addEventListener('click', onClick);
             document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('click', onClick);
             window.addEventListener('resize', onWindowResize);
             
-            // Click to lock
-            document.addEventListener('click', () => {
-                if (!isLocked) controls.lock();
+            // Click to start
+            document.getElementById('clickToStart').addEventListener('click', () => {
+                document.getElementById('clickToStart').style.display = 'none';
+                renderer.domElement.requestPointerLock();
             });
             
-            controls.addEventListener('lock', () => {
-                isLocked = true;
-                document.getElementById('crosshair').style.display = 'block';
+            document.addEventListener('pointerlockchange', () => {
+                isLocked = document.pointerLockElement === renderer.domElement;
+                document.getElementById('clickToStart').style.display = isLocked ? 'none' : 'block';
             });
             
-            controls.addEventListener('unlock', () => {
-                isLocked = false;
-                document.getElementById('crosshair').style.display = 'none';
-            });
-            
-            // Loading
             setTimeout(() => {
                 document.getElementById('loadingFill').style.width = '100%';
-                setTimeout(() => {
-                    document.getElementById('loading').classList.add('hide');
-                }, 500);
+                setTimeout(() => document.getElementById('loading').classList.add('hide'), 500);
             }, 1000);
             
-            // Animate
             animate();
+        }
+        
+        function createPlayer() {
+            player = new THREE.Group();
+            
+            // Body
+            const bodyGeo = new THREE.CapsuleGeometry(0.4, 1, 4, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: primaryColor,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: primaryColor,
+                emissiveIntensity: 0.2
+            });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 1.2;
+            body.castShadow = true;
+            player.add(body);
+            
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.35, 16, 16);
+            const headMat = new THREE.MeshStandardMaterial({
+                color: secondaryColor,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: secondaryColor,
+                emissiveIntensity: 0.3
+            });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 2.1;
+            head.castShadow = true;
+            player.add(head);
+            
+            // Visor
+            const visorGeo = new THREE.BoxGeometry(0.5, 0.15, 0.2);
+            const visorMat = new THREE.MeshStandardMaterial({
+                color: 0x000000,
+                metalness: 1,
+                roughness: 0
+            });
+            const visor = new THREE.Mesh(visorGeo, visorMat);
+            visor.position.set(0, 2.15, 0.25);
+            player.add(visor);
+            
+            // Glow ring around player
+            const ringGeo = new THREE.TorusGeometry(1.2, 0.03, 8, 32);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: primaryColor,
+                transparent: true,
+                opacity: 0.5
+            });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.y = 0.1;
+            player.add(ring);
+            
+            player.position.set(0, 0, 10);
+            scene.add(player);
         }
         
         function createEnvironment() {
@@ -549,92 +502,41 @@
             const groundGeo = new THREE.PlaneGeometry(200, 200);
             const groundMat = new THREE.MeshStandardMaterial({ 
                 color: 0x050510,
-                metalness: 0.8,
-                roughness: 0.4
+                metalness: 0.9,
+                roughness: 0.3
             });
             const ground = new THREE.Mesh(groundGeo, groundMat);
             ground.rotation.x = -Math.PI / 2;
-            ground.position.y = -2;
+            ground.position.y = -0.5;
             ground.receiveShadow = true;
             scene.add(ground);
             
-            // Skybox - Stars
+            // Stars
             const starsGeo = new THREE.BufferGeometry();
-            const starsCount = 5000;
+            const starsCount = 3000;
             const posArray = new Float32Array(starsCount * 3);
-            
             for(let i = 0; i < starsCount * 3; i++) {
                 posArray[i] = (Math.random() - 0.5) * 200;
             }
-            
             starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const starsMat = new THREE.PointsMaterial({
-                size: 0.1,
-                color: primaryColor,
-                transparent: true,
-                opacity: 0.8
-            });
-            const stars = new THREE.Points(starsGeo, starsMat);
-            scene.add(stars);
+            const starsMat = new THREE.PointsMaterial({ size: 0.15, color: primaryColor, transparent: true, opacity: 0.8 });
+            scene.add(new THREE.Points(starsGeo, starsMat));
         }
         
-        function createObjects() {
-            // Central Hub - Xynova
-            const hubGeo = new THREE.IcosahedronGeometry(2, 1);
-            const hubMat = new THREE.MeshStandardMaterial({
-                color: primaryColor,
-                metalness: 0.9,
-                roughness: 0.1,
-                emissive: primaryColor,
-                emissiveIntensity: 0.3,
-                wireframe: false
-            });
-            const hub = new THREE.Mesh(hubGeo, hubMat);
-            hub.position.set(0, 3, 0);
-            hub.userData = { name: 'Xynova Core' };
-            scene.add(hub);
-            interactableObjects.push(hub);
-            
-            // Wireframe wrapper
-            const hubWireGeo = new THREE.IcosahedronGeometry(2.2, 1);
-            const hubWireMat = new THREE.MeshBasicMaterial({
-                color: primaryColor,
-                wireframe: true,
-                transparent: true,
-                opacity: 0.3
-            });
-            const hubWire = new THREE.Mesh(hubWireGeo, hubWireMat);
-            hubWire.position.copy(hub.position);
-            scene.add(hubWire);
-            
-            // Floating Rings
-            for (let i = 0; i < 3; i++) {
-                const ringGeo = new THREE.TorusGeometry(3 + i * 0.5, 0.02, 16, 100);
-                const ringMat = new THREE.MeshBasicMaterial({
-                    color: i % 2 === 0 ? primaryColor : secondaryColor,
-                    transparent: true,
-                    opacity: 0.5
-                });
-                const ring = new THREE.Mesh(ringGeo, ringMat);
-                ring.position.set(0, 3, 0);
-                ring.rotation.x = Math.PI / 2 + i * 0.3;
-                ring.rotation.y = i * 0.5;
-                scene.add(ring);
-            }
-            
-            // Object Platforms
+        function createInteractiveObjects() {
             const platforms = [
-                { pos: [-8, 2, -5], color: primaryColor, name: 'Metaverse Engine' },
-                { pos: [8, 2, -5], color: secondaryColor, name: 'VR/AR Lab' },
-                { pos: [-8, 2, 5], color: tertiaryColor, name: 'Web3 Hub' },
-                { pos: [8, 2, 5], color: 0xffaa00, name: 'Game Dev' },
-                { pos: [0, 2, -12], color: primaryColor, name: 'AI Intelligence' },
-                { pos: [0, 2, 12], color: secondaryColor, name: 'Book Meeting' }
+                { pos: [0, 0, 0], color: primaryColor, name: 'Xynova Core', scale: 2 },
+                { pos: [-10, 0, -8], color: secondaryColor, name: 'Metaverse', scale: 1.5 },
+                { pos: [10, 0, -8], color: tertiaryColor, name: 'VR/AR', scale: 1.5 },
+                { pos: [-10, 0, 8], color: 0xffaa00, name: 'Web3', scale: 1.5 },
+                { pos: [10, 0, 8], color: 0xff0066, name: 'Game Dev', scale: 1.5 },
+                { pos: [0, 0, -15], color: primaryColor, name: 'AI', scale: 1.5 },
+                { pos: [0, 0, 20], color: secondaryColor, name: 'Book', scale: 1.5 }
             ];
             
-            platforms.forEach((p, i) => {
+            platforms.forEach(p => {
                 // Platform base
-                const platGeo = new THREE.CylinderGeometry(1.5, 2, 0.3, 6);
+                const platGeo = new THREE.CylinderGeometry(p.scale * 0.8, p.scale, 0.3, 6);
                 const platMat = new THREE.MeshStandardMaterial({
                     color: p.color,
                     metalness: 0.8,
@@ -644,10 +546,21 @@
                 });
                 const platform = new THREE.Mesh(platGeo, platMat);
                 platform.position.set(...p.pos);
+                platform.position.y = -0.35;
                 scene.add(platform);
                 
                 // Floating object
-                const objGeo = new THREE.OctahedronGeometry(0.8, 0);
+                let objGeo;
+                if (p.name === 'Xynova Core') {
+                    objGeo = new THREE.IcosahedronGeometry(p.scale, 1);
+                } else if (p.name === 'Book') {
+                    objGeo = new THREE.TorusGeometry(p.scale * 0.6, 0.2, 8, 32);
+                } else if (p.name === 'AI') {
+                    objGeo = new THREE.OctahedronGeometry(p.scale * 0.7, 0);
+                } else {
+                    objGeo = new THREE.DodecahedronGeometry(p.scale * 0.7, 0);
+                }
+                
                 const objMat = new THREE.MeshStandardMaterial({
                     color: p.color,
                     metalness: 0.9,
@@ -656,107 +569,57 @@
                     emissiveIntensity: 0.5
                 });
                 const obj = new THREE.Mesh(objGeo, objMat);
-                obj.position.set(p.pos[0], p.pos[1] + 1.5, p.pos[2]);
-                obj.userData = { name: p.name };
+                obj.position.set(p.pos[0], p.pos[1] + p.scale + 1, p.pos[2]);
+                obj.userData = { name: p.name, originalY: obj.position.y };
                 scene.add(obj);
                 interactableObjects.push(obj);
                 
                 // Glow sphere
-                const glowGeo = new THREE.SphereGeometry(1, 32, 32);
+                const glowGeo = new THREE.SphereGeometry(p.scale, 32, 32);
                 const glowMat = new THREE.MeshBasicMaterial({
                     color: p.color,
                     transparent: true,
-                    opacity: 0.1
+                    opacity: 0.08
                 });
                 const glow = new THREE.Mesh(glowGeo, glowMat);
                 glow.position.copy(obj.position);
                 scene.add(glow);
             });
-            
-            // Welcome Platform
-            const welcomePlat = createPlatform([0, 1.5, 8], 'Contact');
-            scene.add(welcomePlat);
-            interactableObjects.push(welcomePlat.children[1]);
-        }
-        
-        function createPlatform(position, name) {
-            const group = new THREE.Group();
-            
-            // Base
-            const baseGeo = new THREE.BoxGeometry(3, 0.2, 3);
-            const baseMat = new THREE.MeshStandardMaterial({
-                color: 0x222233,
-                metalness: 0.9,
-                roughness: 0.3
-            });
-            const base = new THREE.Mesh(baseGeo, baseMat);
-            group.add(base);
-            
-            // Top object - floating cube
-            const topGeo = new THREE.BoxGeometry(1, 1, 1);
-            const topMat = new THREE.MeshStandardMaterial({
-                color: primaryColor,
-                metalness: 0.9,
-                roughness: 0.1,
-                emissive: primaryColor,
-                emissiveIntensity: 0.5
-            });
-            const top = new THREE.Mesh(topGeo, topMat);
-            top.position.y = 1.5;
-            top.userData = { name: name };
-            group.add(top);
-            
-            group.position.set(...position);
-            return group;
         }
         
         function createParticles() {
-            // Floating particles
             const particlesGeo = new THREE.BufferGeometry();
-            const particlesCount = 1000;
+            const particlesCount = 500;
             const posArray = new Float32Array(particlesCount * 3);
-            
             for(let i = 0; i < particlesCount * 3; i += 3) {
-                posArray[i] = (Math.random() - 0.5) * 60;
-                posArray[i + 1] = Math.random() * 20 - 2;
-                posArray[i + 2] = (Math.random() - 0.5) * 60;
+                posArray[i] = (Math.random() - 0.5) * 50;
+                posArray[i + 1] = Math.random() * 15;
+                posArray[i + 2] = (Math.random() - 0.5) * 50;
             }
-            
             particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            
-            const particlesMat = new THREE.PointsMaterial({
-                size: 0.05,
-                color: primaryColor,
-                transparent: true,
-                opacity: 0.6
-            });
-            
-            const particles = new THREE.Points(particlesGeo, particlesMat);
-            scene.add(particles);
+            const particlesMat = new THREE.PointsMaterial({ size: 0.08, color: primaryColor, transparent: true, opacity: 0.5 });
+            scene.add(new THREE.Points(particlesGeo, particlesMat));
         }
         
         function createGrid() {
-            // Grid floor
-            const gridHelper = new THREE.GridHelper(100, 50, primaryColor, 0x111122);
-            gridHelper.position.y = -1.9;
-            gridHelper.material.opacity = 0.3;
-            gridHelper.material.transparent = true;
-            scene.add(gridHelper);
+            const grid = new THREE.GridHelper(100, 40, primaryColor, 0x111122);
+            grid.position.y = -0.48;
+            grid.material.opacity = 0.25;
+            grid.material.transparent = true;
+            scene.add(grid);
         }
         
-        function onKeyDown(event) {
-            switch (event.code) {
+        function onKeyDown(e) {
+            switch(e.code) {
                 case 'KeyW': moveForward = true; break;
                 case 'KeyS': moveBackward = true; break;
                 case 'KeyA': moveLeft = true; break;
                 case 'KeyD': moveRight = true; break;
-                case 'ShiftLeft': 
-                case 'ShiftRight': velocity.multiplyScalar(2); break;
             }
         }
         
-        function onKeyUp(event) {
-            switch (event.code) {
+        function onKeyUp(e) {
+            switch(e.code) {
                 case 'KeyW': moveForward = false; break;
                 case 'KeyS': moveBackward = false; break;
                 case 'KeyA': moveLeft = false; break;
@@ -764,25 +627,23 @@
             }
         }
         
-        function onMouseMove(event) {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        function onMouseMove(e) {
+            if (!isLocked) return;
+            
+            cameraAngle -= e.movementX * 0.002;
+            cameraPitch -= e.movementY * 0.002;
+            cameraPitch = Math.max(-0.5, Math.min(1.2, cameraPitch));
         }
         
         function onClick() {
             if (!isLocked) return;
             
             raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-            const intersects = raycaster.intersectObjects(interactableObjects, true);
+            const intersects = raycaster.intersectObjects(interactableObjects);
             
-            if (intersects.length > 0 && intersects[0].distance < 15) {
-                let obj = intersects[0].object;
-                // Find parent with userData
-                while (obj && !obj.userData?.name) {
-                    obj = obj.parent;
-                }
-                
-                if (obj?.userData?.name) {
+            if (intersects.length > 0 && intersects[0].distance < 20) {
+                const obj = intersects[0].object;
+                if (obj.userData?.name) {
                     showInfoPanel(obj.userData.name);
                 }
             }
@@ -816,50 +677,55 @@
             const time = performance.now();
             const delta = (time - prevTime) / 1000;
             
-            // Movement
             if (isLocked) {
-                velocity.x -= velocity.x * 10.0 * delta;
-                velocity.z -= velocity.z * 10.0 * delta;
+                // Player movement
+                const speed = e.shiftKey ? 15 : 8;
                 
                 direction.z = Number(moveForward) - Number(moveBackward);
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
                 
-                if (moveForward || moveBackward) velocity.z -= direction.z * 50.0 * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * 50.0 * delta;
+                if (moveForward || moveBackward) {
+                    player.position.z -= direction.z * speed * delta;
+                }
+                if (moveLeft || moveRight) {
+                    player.position.x -= direction.x * speed * delta;
+                }
                 
-                controls.moveRight(-velocity.x * delta);
-                controls.moveForward(-velocity.z * delta);
+                // Keep player in bounds
+                player.position.x = Math.max(-45, Math.min(45, player.position.x));
+                player.position.z = Math.max(-45, Math.min(45, player.position.z));
+                
+                // Rotate player to face movement direction
+                if (direction.length() > 0) {
+                    const targetAngle = Math.atan2(direction.x, direction.z);
+                    player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, targetAngle + cameraAngle, 0.1);
+                }
             }
+            
+            // Third-person camera
+            const targetCamX = player.position.x + Math.sin(cameraAngle) * cameraDistance;
+            const targetCamY = player.position.y + 3 + cameraPitch * cameraDistance;
+            const targetCamZ = player.position.z + Math.cos(cameraAngle) * cameraDistance;
+            
+            camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.1);
+            camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetCamY, 0.1);
+            camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.1);
+            camera.lookAt(player.position.x, player.position.y + 1.5, player.position.z);
             
             // Animate objects
-            scene.children.forEach(child => {
-                if (child.geometry && child.userData) {
-                    child.rotation.x += 0.01;
-                    child.rotation.y += 0.01;
-                    child.position.y += Math.sin(time * 0.002 + child.position.x) * 0.002;
+            interactableObjects.forEach(obj => {
+                if (obj.userData?.originalY) {
+                    obj.position.y = obj.userData.originalY + Math.sin(time * 0.001 + obj.position.x) * 0.3;
+                    obj.rotation.x += 0.005;
+                    obj.rotation.y += 0.008;
                 }
             });
-            
-            // Rotate rings
-            scene.children.forEach(child => {
-                if (child.geometry?.type === 'TorusGeometry') {
-                    child.rotation.z += 0.005;
-                }
-            });
-            
-            // Pulse central hub
-            const hub = scene.children.find(c => c.geometry?.type === 'IcosahedronGeometry' && c.userData?.name);
-            if (hub) {
-                const scale = 1 + Math.sin(time * 0.002) * 0.1;
-                hub.scale.set(scale, scale, scale);
-            }
             
             prevTime = time;
             renderer.render(scene, camera);
         }
         
-        // Initialize
         init();
     </script>
 </body>
