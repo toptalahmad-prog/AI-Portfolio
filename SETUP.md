@@ -110,9 +110,11 @@
 
 ## 🔑 API Key Setup
 
-> This portfolio uses Groq AI for the JOGI chatbot. You need your own API key.
+> This portfolio uses **Groq AI** for the JOGI chatbot. You need your own API key.
+> 
+> **IMPORTANT**: The API key is stored in environment variables - NEVER in the code!
 
-### Option 1: Get a Free Groq API Key
+### Step 1: Get a Free Groq API Key
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -134,39 +136,27 @@
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Option 2: Set Up Google Drive (For Production)
+### Option 2: Using Environment Variables (Recommended)
 
-This portfolio fetches the API key from Google Drive for security:
+Set your API key as an environment variable in your deployment platform:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│           GOOGLE DRIVE KEY STORAGE                       │
+│           ENVIRONMENT VARIABLE SETUP                     │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
-│  1. Create a Google Sheet or Google Doc                │
+│  The API key is stored securely in environment         │
+│  variables - NEVER hardcoded in the code!               │
 │                                                         │
-│  2. Add your API key as text                         │
+│  Variable Name: GROQ_API_KEY                          │
+│  Your Key: gsk_your_key_here                          │
 │                                                         │
-│  3. Make it "Anyone with link can view"              │
+│  See deployment sections below for platform-          │
+│  specific instructions.                              │
 │                                                         │
-│  4. Copy the sharing URL                          │
-│                                                         │
-│  5. In app.py, update DRIVE_KEY_URL:               │
-│     DRIVE_KEY_URL = "your-google-drive-url"        │
-│                                                         │
-│  ⚠️ This keeps key out of public code!           │
+│  ⚠️ NEVER commit API keys to GitHub!                  │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
-```
-
-#### OR直接 in app.py (Simple):
-
-```python
-# In app.py, find this line:
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-
-# Replace with your key (NOT recommended for public repos):
-GROQ_API_KEY = "gsk_your_key_here"
 ```
 
 ---
