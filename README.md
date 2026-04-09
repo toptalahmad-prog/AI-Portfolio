@@ -1,6 +1,6 @@
 # 🚀 AI Portfolio Template
 
-A stunning **neon-themed AI-powered portfolio** with embedded JOGI chatbot. Perfect for developers, entrepreneurs, and tech professionals who want to showcase their work with style.
+A stunning **neon-themed AI-powered portfolio** with embedded JOGI chatbot, meeting booking system, and admin dashboard. Perfect for developers, entrepreneurs, and tech professionals.
 
 ---
 
@@ -21,48 +21,80 @@ A stunning **neon-themed AI-powered portfolio** with embedded JOGI chatbot. Perf
 |:--------|:------------|
 | 🌟 **Neon Design** | Cyberpunk-inspired with cyan/magenta theme |
 | 🤖 **JOGI AI Chatbot** | Smart AI that answers questions about you |
+| 📅 **Booking System** | Meeting scheduling with calendar & timezone support |
+| 👤 **Admin Dashboard** | Manage contacts, meetings & availability |
+| 🕐 **Availability Settings** | Set daily/weekly/monthly time slots |
+| 🌍 **Timezone Support** | Visitors see times in their timezone |
+| 📧 **Contact Form** | Messages sent to Telegram |
 | 🎵 **Music Player** | Background music with audio-reactive visuals |
 | 🎤 **Voice Commands** | Navigate using voice |
-| 📅 **Booking System** | Meeting scheduling with calendar |
 | 💫 **3D Effects** | Floating animated elements |
 | 📱 **Responsive** | Works perfectly on all devices |
 
 ---
 
-## 🚀 Quick Start
+## 🛠️ Tech Stack
 
-### 1️⃣ Clone the Repository
+| Component | Technology |
+|:----------|:-----------|
+| Backend | Python Flask |
+| Frontend | HTML, CSS, JavaScript |
+| Database | PostgreSQL (Neon) |
+| AI | Groq (llama-3.1-8b-instant) |
+| Notifications | Telegram Bot |
+
+---
+
+## 📋 What You Need
+
+Before setting up, gather these accounts:
+
+| Service | Purpose | Free? |
+|:--------|:---------|:------|
+| [Groq](https://console.groq.com) | AI for chatbot | ✅ 60K tokens/min |
+| [Neon](https://neon.tech) | PostgreSQL database | ✅ |
+| [Telegram Bot](https://t.me/BotFather) | Contact notifications | ✅ |
+
+---
+
+## 🚀 Quick Setup (5 minutes)
+
+### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/AI-Portfolio.git
 cd AI-Portfolio
 ```
 
-### 2️⃣ Install Dependencies
+### Step 2: Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3️⃣ Set Your API Key
-
-> **Get free API key:** [console.groq.com](https://console.groq.com)
+### Step 3: Set Environment Variables
 
 ```bash
-# Mac/Linux
-export GROQ_API_KEY="gsk_your_key_here"
+# Required
+export GROQ_API_KEY="gsk_your_groq_key"
+export DATABASE_URL="postgresql://user:pass@host/neondb?sslmode=require"
 
-# Windows (PowerShell)
-$env:GROQ_API_KEY="gsk_your_key_here"
+# Optional (for Telegram notifications)
+export TELEGRAM_BOT_TOKEN="your_bot_token"
+export TELEGRAM_CHAT_ID="your_chat_id"
+
+# Optional (for admin dashboard)
+export ADMIN_USERNAME="admin"
+export ADMIN_PASSWORD="your_password"
 ```
 
-### 4️⃣ Run the Server
+### Step 4: Run Locally
 
 ```bash
 python app.py
 ```
 
-### 5️⃣ Open in Browser
+### Step 5: Open in Browser
 
 ```
 🌐 http://localhost:5000
@@ -70,23 +102,81 @@ python app.py
 
 ---
 
-## 📦 Deployment Options
+## ☁️ Deploy to Replit
 
-### Recommended: Replit (Free)
-
+### Step 1: Import from GitHub
 1. Go to **[replit.com](https://replit.com)**
-2. Import your GitHub repo
-3. Add secret: `GROQ_API_KEY = your_key_here`
-4. Click **Run** → Done!
+2. Click **"+ Create Replit"**
+3. Select **"Import from GitHub"**
+4. Choose this repository
 
-### Other Options
+### Step 2: Add Secrets (🔐 icon)
 
-| Platform | Free Tier | Setup Time |
-|:---------|:---------:|:----------:|
-| [Railway](https://railway.app) | $5/month | 5 min |
-| [Render](https://render.com) | ✅ Free | 5 min |
+| Secret | Value | Required |
+|:-------|:-------|:---------|
+| `GROQ_API_KEY` | Your Groq API key | ✅ Yes |
+| `NEON_URL` | Your Neon PostgreSQL URL | ✅ Yes |
+| `TELEGRAM_BOT_TOKEN` | Your Telegram bot token | Optional |
+| `TELEGRAM_CHAT_ID` | Your Telegram chat ID | Optional |
+| `ADMIN_USERNAME` | Dashboard username | Optional |
+| `ADMIN_PASSWORD` | Dashboard password | Optional |
 
-> 📖 **Full guide:** See [SETUP.md](./SETUP.md)
+### Step 3: Get Your Secrets
+
+#### Groq API Key (Required)
+1. Go to [console.groq.com](https://console.groq.com)
+2. Sign up → API Keys → Create Key
+3. Copy key (starts with `gsk_`)
+
+#### Neon Database (Required)
+1. Go to [neon.tech](https://neon.tech)
+2. Create a new project
+3. Go to **Connection Details**
+4. Copy the connection string
+5. Add `?sslmode=require` at the end
+
+#### Telegram Bot (Optional)
+1. Open [BotFather](https://t.me/BotFather) on Telegram
+2. Send `/newbot` and follow instructions
+3. Copy the bot token
+4. Get your chat ID from [@userinfobot](https://t.me/userinfobot)
+
+### Step 4: Run
+
+Click **Run** → Done! 🎉
+
+---
+
+## 🔧 Configuration
+
+### Admin Dashboard
+
+Access at: `/ahmadAdmin`
+
+| Feature | Description |
+|:--------|:-------------|
+| 👥 **Contacts** | View all contact form submissions |
+| 📅 **Meetings** | View all booked meetings |
+| ⚙️ **Availability** | Set your available time slots |
+| 🌍 **Timezone** | Set your timezone |
+
+### Availability Settings
+
+In the admin dashboard, you can set:
+
+| Mode | Description |
+|:-----|:------------|
+| 📅 **Daily** | Different hours for each day of the week |
+| 📆 **Weekly** | Same hours for all days |
+| 📆 **Monthly** | Same hours for all dates in a month |
+
+**Default times**: 11:00 PM, 12:00 AM, 1:00 AM (Pakistan timezone)
+
+### Timezone Support
+
+- Visitors see time slots in their local timezone
+- You set your timezone in admin dashboard
+- Time difference is displayed to visitors
 
 ---
 
@@ -94,13 +184,14 @@ python app.py
 
 ```
 AI-Portfolio/
-├── 🌐  index.html         ← Main portfolio page
-├── 💬  chatbot.html        ← JOGI AI chatbot
+├── 🌐  index.html         ← Main portfolio
+├── 💬  chatbot.html       ← JOGI AI chatbot
 ├── 📅  book.html          ← Meeting booking
-├── 🎮  jogiworld.html     ← 3D experience
-├── ⚙️  app.py             ← Flask server
-├── 📦  requirements.txt   ← Python packages
-└── 📖  SETUP.md           ← Detailed guide
+├── 🎮  jogiworld.html    ← 3D experience
+├── ⚙️  app.py            ← Flask server
+├── 📦  requirements.txt  ← Python packages
+├── 📖  SETUP.md          ← Detailed guide
+└── 📖  replit.md         ← Replit deployment guide
 ```
 
 ---
@@ -109,35 +200,56 @@ AI-Portfolio/
 
 ### Change Your Name
 
-In `index.html`, find and edit:
+In `index.html`:
 ```html
-<span class="name">Muhammad Ahmad</span>
-<span class="surname">Humayoun</span>
+<span class="name">Your Name</span>
+<span class="surname">Your Surname</span>
 ```
 
 ### Update AI Knowledge
 
-In `app.py`, edit the `SYSTEM_PROMPT` variable with your info.
+In `app.py`, edit the `SYSTEM_PROMPT` variable.
 
 ### Change Colors
 
-In `index.html` CSS section:
+In `index.html`:
 ```css
 :root {
-    --primary: #00f0ff;   /* Change cyan */
-    --secondary: #ff00ff; /* Change magenta */
+    --primary: #00f0ff;   /* Cyan */
+    --secondary: #ff00ff; /* Magenta */
 }
 ```
 
 ---
 
-## ⚠️ Important
+## ⚠️ Important Notes
 
 | Do | Don't |
 |:---|:------|
-| ✅ Use environment variables for API keys | ❌ Commit API keys to GitHub |
-| ✅ Keep your backend running for chatbot | ❌ Expect chatbot on static hosting |
-| ✅ Set GROQ_API_KEY in deployment | ❌ Leave it blank |
+| ✅ Use environment variables | ❌ Commit API keys to GitHub |
+| ✅ Keep backend running for chatbot | ❌ Expect chatbot on static hosting |
+| ✅ Set NEON_URL for database | ❌ Leave database config empty |
+| ✅ Use Replit for deployment | ❌ Use GitHub Pages (no backend) |
+
+---
+
+## ❓ Troubleshooting
+
+### Chatbot not working?
+- Check `GROQ_API_KEY` is set in Secrets
+- Check server logs for errors
+
+### Database not connecting?
+- Verify `NEON_URL` is correct
+- Check Neon project is active
+
+### Telegram not receiving messages?
+- Verify both `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set
+- Start a conversation with your bot first
+
+### Time slots not showing?
+- Go to admin dashboard → Set availability
+- Default: 11:00 PM, 12:00 AM, 1:00 AM
 
 ---
 
@@ -153,7 +265,7 @@ MIT License - Feel free to use for your own portfolio!
 |:-------|:-----|
 | Creator | Muhammad Ahmad Humayoun |
 | AI | [Groq](https://groq.com) |
-| Inspired by | Neon/Cyberpunk design |
+| Database | [Neon](https://neon.tech) |
 
 ---
 
@@ -161,6 +273,6 @@ MIT License - Feel free to use for your own portfolio!
 
 **Made with ❤️ by Ahmad**
 
-[Report Bug](https://github.com/toptalahmad-prog/AI-Portfolio/issues) · [Request Feature](https://github.com/toptalahmad-prog/AI-Portfolio/issues)
+[Report Bug](https://github.com/toptalahmad-prog/AI-Portfolio/issues)
 
 </div>

@@ -4,14 +4,20 @@ import requests
 import os
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 import psycopg2
 import psycopg2.extras
 import re
+from collections import defaultdict
 
 app = Flask(__name__, static_folder='.')
 app.secret_key = os.environ.get('SECRET_KEY', 'jogi-portfolio-secret-key-xynova-2026')
+
+# Rate limiting for chat API
+RATE_LIMIT = 10  # max requests
+RATE_WINDOW = 60  # seconds
+chat_requests = defaultdict(list)
 
 # Enable CORS for all routes
 CORS(app)
@@ -199,10 +205,6 @@ def init_db():
                 'INSERT INTO settings (setting_key, setting_value) VALUES (%s, %s)',
                 ('availability_mode', 'daily')
             )
-            c.execute(
-                'INSERT INTO availability (setting_type, time_slots, is_active) VALUES (%s, %s, %s)',
-                ('weekly', '["23:00", "00:00", "01:00"]', True)
-            )
         
         conn.commit()
         c.close()
@@ -266,6 +268,20 @@ def login_required(f):
             return jsonify({'error': 'Not authenticated'}), 401
         return f(*args, **kwargs)
     return decorated_function
+
+def check_rate_limit(ip):
+    """Check if IP has exceeded rate limit. Returns (allowed, remaining_requests)"""
+    now = datetime.now()
+    window_start = now - timedelta(seconds=RATE_WINDOW)
+    
+    # Clean old entries
+    chat_requests[ip] = [t for t in chat_requests[ip] if t > window_start]
+    
+    if len(chat_requests[ip]) >= RATE_LIMIT:
+        return False, 0
+    
+    chat_requests[ip].append(now)
+    return True, RATE_LIMIT - len(chat_requests[ip])
 
 # Default available slots
 AVAILABLE_SLOTS = {
@@ -688,6 +704,12 @@ def chat():
     if request.method != 'POST':
         return jsonify({'error': 'Method not allowed'}), 405
     
+    # Rate limiting
+    client_ip = request.remote_addr or 'unknown'
+    allowed, remaining = check_rate_limit(client_ip)
+    if not allowed:
+        return jsonify({'error': 'Too many requests. Please wait a moment and try again.'}), 429
+    
     try:
         data = request.get_json()
     except:
@@ -768,8 +790,19 @@ def contact():
         email = data.get('email', '').strip()
         message = data.get('message', '').strip()
         
+        # Validation
         if not name or not email or not message:
             return jsonify({'success': False, 'error': 'All fields are required'}), 400
+        
+        if len(name) > 100:
+            return jsonify({'success': False, 'error': 'Name must be under 100 characters'}), 400
+        
+        if len(message) > 2000:
+            return jsonify({'success': False, 'error': 'Message must be under 2000 characters'}), 400
+        
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_regex, email):
+            return jsonify({'success': False, 'error': 'Invalid email format'}), 400
         
         save_contact(name, email, message)
         
@@ -1700,129 +1733,6 @@ ADMIN_HTML = '''
             document.getElementById('messageModal').classList.add('show');
         }
 
-        // Load settings and availability
-        async function loadSettings() {
-            try {
-                const response = await fetch('/api/settings?_t=' + Date.now());
-                const data = await response.json();
-                
-                if (data.settings) {
-                    // Set timezone
-                    if (data.settings.owner_timezone) {
-                        document.getElementById('ownerTimezone').value = data.settings.owner_timezone;
-                    }
-                    
-                    // Set availability mode
-                    if (data.settings.availability_mode) {
-                        document.querySelectorAll('.mode-btn').forEach(btn => {
-                            btn.classList.remove('active');
-                            btn.style.background = 'transparent';
-                            btn.style.borderColor = 'var(--border)';
-                            btn.style.color = 'var(--text-muted)';
-                            if (btn.dataset.mode === data.settings.availability_mode) {
-                                btn.classList.add('active');
-                                btn.style.background = 'rgba(0,240,255,0.1)';
-                                btn.style.borderColor = 'var(--primary)';
-                                btn.style.color = 'var(--primary)';
-                            }
-                        });
-                    }
-                }
-                
-                // Load time slots into container - use correct variable name
-                renderTimeSlotsForBooking();
-            } catch (e) {
-                console.error('Error loading settings:', e);
-                renderTimeSlotsForBooking();
-            }
-        }
-
-        // Renamed to avoid conflict - this is for booking page
-        function renderTimeSlotsForBooking() {
-            const container = document.getElementById('timeSlotsContainer');
-            if (!container) return;
-            
-            const timeSlots24hr = ["23:00", "00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
-            container.innerHTML = timeSlots24hr.map(time => `
-                <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s;">
-                    <input type="checkbox" value="${time}" class="time-slot-checkbox" style="width: 18px; height: 18px; accent-color: var(--primary);">
-                    <span style="color: var(--text); font-size: 0.9rem;">${time}</span>
-                </label>
-            `).join('');
-        }
-
-        async function setAvailabilityMode(mode) {
-            // Update UI
-            document.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.background = 'transparent';
-                btn.style.borderColor = 'var(--border)';
-                btn.style.color = 'var(--text-muted)';
-            });
-            event.target.classList.add('active');
-            event.target.style.background = 'rgba(0,240,255,0.1)';
-            event.target.style.borderColor = 'var(--primary)';
-            event.target.style.color = 'var(--primary)';
-            
-            // Save to server
-            try {
-                await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ availability_mode: mode })
-                });
-            } catch (e) {
-                console.error('Error saving mode:', e);
-            }
-        }
-
-        async function saveTimezone(tz) {
-            try {
-                await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ owner_timezone: tz })
-                });
-                showSaveStatus();
-            } catch (e) {
-                console.error('Error saving timezone:', e);
-            }
-        }
-
-        async function saveAvailability() {
-            const selectedSlots = Array.from(document.querySelectorAll('.time-slot-checkbox:checked')).map(cb => cb.value);
-            
-            // Get current mode
-            const activeMode = document.querySelector('.mode-btn.active');
-            const mode = activeMode ? activeMode.dataset.mode : 'daily';
-            
-            try {
-                await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        availability_mode: mode,
-                        availability: [{
-                            setting_type: mode,
-                            time_slots: selectedSlots
-                        }]
-                    })
-                });
-                showSaveStatus();
-            } catch (e) {
-                console.error('Error saving availability:', e);
-            }
-        }
-
-        function showSaveStatus() {
-            const status = document.getElementById('saveStatus');
-            status.style.display = 'block';
-            status.textContent = '✓ Saved successfully!';
-            setTimeout(() => {
-                status.style.display = 'none';
-            }, 3000);
-        }
-
         function closeModal() {
             document.getElementById('messageModal').classList.remove('show');
         }
@@ -1922,6 +1832,10 @@ def booking():
 @app.route('/JogiWorld')
 def jogiworld():
     return send_from_directory('.', 'jogiworld.html')
+
+@app.route('/favicon.ico')
+def favicon():
+    return '', 204
 
 @app.route('/<path:filename>')
 def serve_static(filename):
