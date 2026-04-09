@@ -77,6 +77,60 @@ def init_db():
             )
         ''')
         
+        # Create availability table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS availability (
+                id SERIAL PRIMARY KEY,
+                setting_type VARCHAR(20) NOT NULL DEFAULT 'weekly',
+                day_of_week VARCHAR(10),
+                specific_date DATE,
+                time_slots TEXT NOT NULL DEFAULT '[]',
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Create settings table for timezone configuration
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS settings (
+                id SERIAL PRIMARY KEY,
+                setting_key VARCHAR(50) UNIQUE NOT NULL,
+                setting_value TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Insert default availability if empty
+        c.execute('SELECT COUNT(*) FROM availability')
+        if c.fetchone()[0] == 0:
+            default_slots = [
+                ("Monday", '["10:00", "14:00", "16:00"]'),
+                ("Tuesday", '["10:00", "14:00", "16:00"]'),
+                ("Wednesday", '["10:00", "14:00"]'),
+                ("Thursday", '["10:00", "14:00", "16:00"]'),
+                ("Friday", '["10:00", "14:00"]'),
+                ("Saturday", '["11:00"]'),
+                ("Sunday", '[]')
+            ]
+            for day, slots in default_slots:
+                c.execute(
+                    'INSERT INTO availability (setting_type, day_of_week, time_slots) VALUES (%s, %s, %s)',
+                    ('daily', day, slots)
+                )
+        
+        # Insert default settings if empty
+        c.execute('SELECT COUNT(*) FROM settings')
+        if c.fetchone()[0] == 0:
+            c.execute(
+                'INSERT INTO settings (setting_key, setting_value) VALUES (%s, %s)',
+                ('owner_timezone', 'Asia/Karachi')
+            )
+            c.execute(
+                'INSERT INTO settings (setting_key, setting_value) VALUES (%s, %s)',
+                ('availability_mode', 'daily')
+            )
+        
         conn.commit()
         c.close()
         conn.close()
@@ -146,13 +200,144 @@ AVAILABLE_SLOTS = {
     "Sunday": []
 }
 
+def get_owner_timezone():
+    """Get the owner's timezone from settings"""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT setting_value FROM settings WHERE setting_key = 'owner_timezone'")
+        result = c.fetchone()
+        c.close()
+        conn.close()
+        return result[0] if result else 'Asia/Karachi'
+    except:
+        return 'Asia/Karachi'
+
+def get_availability_mode():
+    """Get the availability mode (daily, weekly, monthly)"""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT setting_value FROM settings WHERE setting_key = 'availability_mode'")
+        result = c.fetchone()
+        c.close()
+        conn.close()
+        return result[0] if result else 'daily'
+    except:
+        return 'daily'
+
 def get_available_slots(date_str):
+    """Get available slots for a specific date, considering the availability mode"""
     try:
         date_obj = datetime.strptime(date_str, '%Y-%m-%d')
         day_name = date_obj.strftime('%A')
+        date_iso = date_obj.strftime('%Y-%m-%d')
+        
+        conn = get_db()
+        c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Check availability mode
+        mode = get_availability_mode()
+        
+        if mode == 'monthly':
+            # Check for monthly specific availability
+            c.execute("SELECT time_slots FROM availability WHERE setting_type = 'monthly' AND specific_date = %s AND is_active = TRUE", (date_iso,))
+            result = c.fetchone()
+            if result:
+                c.close()
+                conn.close()
+                return json.loads(result['time_slots'])
+        
+        if mode == 'weekly':
+            # Weekly mode - same slots every week
+            c.execute("SELECT time_slots FROM availability WHERE setting_type = 'weekly' AND is_active = TRUE LIMIT 1")
+            result = c.fetchone()
+            c.close()
+            conn.close()
+            if result:
+                return json.loads(result['time_slots'])
+            return []
+        
+        # Daily mode - check specific day
+        c.execute("SELECT time_slots FROM availability WHERE setting_type = 'daily' AND day_of_week = %s AND is_active = TRUE", (day_name,))
+        result = c.fetchone()
+        c.close()
+        conn.close()
+        
+        if result:
+            return json.loads(result['time_slots'])
+        return []
+    except Exception as e:
+        print(f"Error getting slots: {e}")
         return AVAILABLE_SLOTS.get(day_name, [])
+
+def save_availability(setting_type, day_of_week=None, specific_date=None, time_slots=None):
+    """Save availability settings"""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        if setting_type == 'daily':
+            # Update or insert daily availability
+            c.execute('''
+                INSERT INTO availability (setting_type, day_of_week, time_slots, updated_at)
+                VALUES (%s, %s, %s, NOW())
+                ON CONFLICT DO NOTHING
+            ''', (setting_type, day_of_week, json.dumps(time_slots)))
+        
+        elif setting_type == 'weekly':
+            # Update weekly slots (applies to all days)
+            c.execute('''
+                UPDATE availability SET time_slots = %s, updated_at = NOW()
+                WHERE setting_type = 'weekly'
+            ''', (json.dumps(time_slots),))
+        
+        elif setting_type == 'monthly':
+            # Insert monthly specific date
+            c.execute('''
+                INSERT INTO availability (setting_type, specific_date, time_slots, updated_at)
+                VALUES (%s, %s, %s, NOW())
+                ON CONFLICT DO NOTHING
+            ''', (setting_type, specific_date, json.dumps(time_slots)))
+        
+        conn.commit()
+        c.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error saving availability: {e}")
+        return False
+
+def get_all_availability():
+    """Get all availability settings"""
+    try:
+        conn = get_db()
+        c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        c.execute("SELECT * FROM availability ORDER BY day_of_week, specific_date")
+        rows = c.fetchall()
+        c.close()
+        conn.close()
+        return [dict(row) for row in rows]
     except:
         return []
+
+def save_setting(setting_key, setting_value):
+    """Save a setting"""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO settings (setting_key, setting_value, updated_at)
+            VALUES (%s, %s, NOW())
+            ON CONFLICT (setting_key) DO UPDATE SET setting_value = %s, updated_at = NOW()
+        ''', (setting_key, setting_value, setting_value))
+        conn.commit()
+        c.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Error saving setting: {e}")
+        return False
 
 def get_api_key():
     api_key = os.environ.get('GROQ_API_KEY')
@@ -277,7 +462,62 @@ def get_slots():
         pass
     
     available = [s for s in get_available_slots(date) if s not in booked]
-    return jsonify({'date': date, 'available': available, 'booked': booked})
+    
+    # Get owner's timezone
+    owner_tz = get_owner_timezone()
+    
+    return jsonify({
+        'date': date, 
+        'available': available, 
+        'booked': booked,
+        'owner_timezone': owner_tz
+    })
+
+@app.route('/api/settings', methods=['GET', 'POST'])
+def api_settings():
+    """Get or save settings"""
+    if request.method == 'GET':
+        try:
+            conn = get_db()
+            c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            c.execute("SELECT * FROM settings")
+            rows = c.fetchall()
+            c.close()
+            conn.close()
+            settings = {row['setting_key']: row['setting_value'] for row in rows}
+            
+            # Also get availability
+            availability = get_all_availability()
+            
+            return jsonify({
+                'settings': settings,
+                'availability': availability
+            })
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    # POST - Save settings
+    try:
+        data = request.get_json()
+        
+        if 'owner_timezone' in data:
+            save_setting('owner_timezone', data['owner_timezone'])
+        
+        if 'availability_mode' in data:
+            save_setting('availability_mode', data['availability_mode'])
+        
+        if 'availability' in data:
+            for av in data['availability']:
+                save_availability(
+                    setting_type=av.get('setting_type', 'daily'),
+                    day_of_week=av.get('day_of_week'),
+                    specific_date=av.get('specific_date'),
+                    time_slots=av.get('time_slots', [])
+                )
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/book', methods=['POST'])
 def book_meeting():
