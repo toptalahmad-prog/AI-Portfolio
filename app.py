@@ -37,10 +37,10 @@ ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', '')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '')
 
 def get_db():
-    db_url = os.environ.get('DATABASE_URL')
+    db_url = os.environ.get('NEON_URL')
     if not db_url:
-        print("WARNING: DATABASE_URL not set")
-        raise Exception("DATABASE_URL not configured")
+        print("WARNING: NEON_URL not set")
+        raise Exception("NEON_URL not configured")
     conn = psycopg2.connect(db_url)
     return conn
 
@@ -160,12 +160,12 @@ def check_startup_config():
     else:
         print(f"❌ GROQ_API_KEY: Not set (Chatbot will not work)")
     
-    # Check DATABASE_URL
-    db_url = os.environ.get('DATABASE_URL', '')
+    # Check NEON_URL
+    db_url = os.environ.get('NEON_URL', '')
     if db_url:
-        print(f"✅ DATABASE_URL: Configured")
+        print(f"✅ NEON_URL: Configured")
     else:
-        print(f"❌ DATABASE_URL: Not set (Booking & Contacts will not work)")
+        print(f"❌ NEON_URL: Not set (Booking & Contacts will not work)")
     
     # Check Telegram
     telegram_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')

@@ -37,7 +37,7 @@ Click the **🔐 (Secrets)** icon in the sidebar and add:
 | Secret | Value | Required |
 |--------|-------|----------|
 | `GROQ_API_KEY` | Your Groq API key | ✅ Yes |
-| `DATABASE_URL` | Your Neon database URL | ✅ Yes |
+| `NEON_URL` | Your Neon database URL | ✅ Yes |
 | `TELEGRAM_BOT_TOKEN` | Your Telegram bot token | Optional |
 | `TELEGRAM_CHAT_ID` | Your Telegram chat ID | Optional |
 
@@ -77,7 +77,7 @@ gunicorn --bind=0.0.0.0:5000 --workers=1 --timeout=120 app:app
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `GROQ_API_KEY` | AI chatbot API key | `gsk_xxxxxxxx` |
-| `DATABASE_URL` | Neon PostgreSQL URL | `postgresql://...` |
+| `NEON_URL` | Neon PostgreSQL URL | `postgresql://...` |
 | `TELEGRAM_BOT_TOKEN` | Telegram bot for notifications | `123456:ABC-DEF` |
 | `TELEGRAM_CHAT_ID` | Telegram chat ID for notifications | `123456789` |
 | `SECRET_KEY` | Flask session secret | Optional |
@@ -105,7 +105,7 @@ gunicorn --bind=0.0.0.0:5000 --workers=1 --timeout=120 app:app
 - Check server logs for errors
 
 ### Booking/Contacts not working?
-- Check `DATABASE_URL` is set correctly
+- Check `NEON_URL` is set correctly
 - Ensure Neon DB is active
 
 ### Telegram not receiving messages?
