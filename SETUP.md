@@ -173,7 +173,7 @@ This portfolio requires several environment variables depending on which feature
 │  Purpose: Powers the JOGI AI chatbot                           │
 │  Get from: https://console.groq.com                            │
 │                                                                  │
-│  📌 NEON_URL (REQUIRED for Booking & Contacts)              │
+│  📌 DATABASE_URL (REQUIRED for Booking & Contacts)              │
 │  ─────────────────────────────────────────────                  │
 │  Purpose: Stores meeting bookings and contact form messages   │
 │  Get from: https://neon.tech (create free PostgreSQL project)   │
@@ -196,13 +196,13 @@ This portfolio requires several environment variables depending on which feature
 ```bash
 # Mac/Linux (add to ~/.bashrc or ~/.zshrc for permanent)
 export GROQ_API_KEY="gsk_your_key_here"
-export NEON_URL="postgresql://user:pass@host/db?sslmode=require"
+export DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
 export TELEGRAM_BOT_TOKEN="your_bot_token"
 export TELEGRAM_CHAT_ID="your_chat_id"
 
 # Windows PowerShell (temporary)
 $env:GROQ_API_KEY="gsk_your_key_here"
-$env:NEON_URL="postgresql://user:pass@host/db?sslmode=require"
+$env:DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
 
 # Windows Command Prompt (temporary)
 set GROQ_API_KEY=gsk_your_key_here
@@ -243,7 +243,7 @@ pip install -r requirements.txt
 ```bash
 # Set required variables
 export GROQ_API_KEY="gsk_your_key_here"
-export NEON_URL="postgresql://neondb_owner:password@host/neondb?sslmode=require"
+export DATABASE_URL="postgresql://neondb_owner:password@host/neondb?sslmode=require"
 
 # Optional: For Telegram notifications
 export TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
@@ -251,11 +251,11 @@ export TELEGRAM_CHAT_ID="your_telegram_chat_id"
 
 # On Windows (PowerShell):
 $env:GROQ_API_KEY="gsk_your_key_here"
-$env:NEON_URL="postgresql://neondb_owner:password@host/neondb?sslmode=require"
+$env:DATABASE_URL="postgresql://neondb_owner:password@host/neondb?sslmode=require"
 
 # On Windows (Command Prompt):
 set GROQ_API_KEY=gsk_your_key_here
-set NEON_URL=postgresql://neondb_owner:password@host/neondb?sslmode=require
+set DATABASE_URL=postgresql://neondb_owner:password@host/neondb?sslmode=require
 ```
 
 ### Step 4: Run the Server
@@ -307,7 +307,7 @@ python app.py
 │  5. Add Secrets (click 🔐 icon):                 │
 │     ────────────────────────────────────────     │
 │     GROQ_API_KEY = gsk_your_api_key              │
-│     NEON_URL = postgresql://...              │
+│     DATABASE_URL = postgresql://...              │
 │     TELEGRAM_BOT_TOKEN = (optional)              │
 │     TELEGRAM_CHAT_ID = (optional)               │
 │     ────────────────────────────────────────     │

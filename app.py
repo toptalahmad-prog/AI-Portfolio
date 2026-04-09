@@ -16,24 +16,24 @@ app.secret_key = os.environ.get('SECRET_KEY', 'jogi-portfolio-secret-key-xynova-
 # DATABASE CONFIGURATION & VALIDATION
 # ==========================================
 
-NEON_URL = os.environ.get('NEON_URL', '').strip()
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
 
-# Validate NEON_URL format on startup
-def validate_neon_url():
-    if not NEON_URL:
-        return False, "NEON_URL not set"
+# Validate DATABASE_URL format on startup
+def validate_database_url():
+    if not DATABASE_URL:
+        return False, "DATABASE_URL not set"
     
     # Check it starts with postgres:// or postgresql://
-    if not (NEON_URL.startswith('postgres://') or NEON_URL.startswith('postgresql://')):
-        return False, f"Invalid NEON_URL format. Must start with 'postgres://' or 'postgresql://', got: {NEON_URL[:20]}..."
+    if not (DATABASE_URL.startswith('postgres://') or DATABASE_URL.startswith('postgresql://')):
+        return False, f"Invalid DATABASE_URL format. Must start with 'postgres://' or 'postgresql://', got: {DATABASE_URL[:20]}..."
     
     # Check it contains @ (has password/host)
-    if '@' not in NEON_URL:
-        return False, "Invalid NEON_URL - missing @ (should contain user:password@host)"
+    if '@' not in DATABASE_URL:
+        return False, "Invalid DATABASE_URL - missing @ (should contain user:password@host)"
     
     return True, "Valid"
 
-is_valid_neon, neon_validation_msg = validate_neon_url()
+is_valid_db, db_validation_msg = validate_database_url()
 
 # ==========================================
 # TELEGRAM BOT CONFIGURATION
@@ -71,10 +71,10 @@ DB_INIT_MESSAGE = ""
 
 def get_db():
     """Get database connection with proper error handling"""
-    if not is_valid_neon:
-        raise Exception(f"Database not configured: {neon_validation_msg}")
+    if not is_valid_db:
+        raise Exception(f"Database not configured: {db_validation_msg}")
     try:
-        conn = psycopg2.connect(NEON_URL)
+        conn = psycopg2.connect(DATABASE_URL)
         return conn
     except psycopg2.Error as e:
         raise Exception(f"Database connection failed: {str(e)[:100]}")
@@ -85,9 +85,9 @@ def verify_db_connection():
     """Test database connection on startup"""
     global DATABASE_AVAILABLE, DB_INIT_MESSAGE
     try:
-        if not is_valid_neon:
+        if not is_valid_db:
             DATABASE_AVAILABLE = False
-            DB_INIT_MESSAGE = neon_validation_msg
+            DB_INIT_MESSAGE = db_validation_msg
             print(f"⚠️  Database: {DB_INIT_MESSAGE}")
             return False
             
@@ -108,8 +108,8 @@ def verify_db_connection():
 
 def init_db():
     """Initialize database tables if they don't exist"""
-    if not is_valid_neon:
-        print(f"⚠️  Database initialization skipped: {neon_validation_msg}")
+    if not is_valid_db:
+        print(f"⚠️  Database initialization skipped: {db_validation_msg}")
         return False
         
     try:
@@ -222,11 +222,11 @@ def check_startup_config():
     else:
         print(f"❌ GROQ_API_KEY: Not set (Chatbot will not work)")
     
-    # Check NEON_URL
-    if is_valid_neon:
-        print(f"✅ NEON_URL: Valid format")
+    # Check DATABASE_URL
+    if is_valid_db:
+        print(f"✅ DATABASE_URL: Valid format")
     else:
-        print(f"❌ NEON_URL: {neon_validation_msg}")
+        print(f"❌ DATABASE_URL: {db_validation_msg}")
     
     # Check database connection
     if DATABASE_AVAILABLE:
@@ -575,7 +575,7 @@ def health_check():
     return jsonify({
         'status': 'ok',
         'database': {
-            'configured': is_valid_neon,
+            'configured': is_valid_db,
             'available': DATABASE_AVAILABLE,
             'message': DB_INIT_MESSAGE
         },
