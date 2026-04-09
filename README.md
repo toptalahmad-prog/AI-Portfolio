@@ -39,7 +39,7 @@ A stunning **neon-themed AI-powered portfolio** with embedded JOGI chatbot, meet
 |:----------|:-----------|
 | Backend | Python Flask |
 | Frontend | HTML, CSS, JavaScript |
-| Database | PostgreSQL (Neon) |
+| Database | PostgreSQL (Replit) |
 | AI | Groq (llama-3.1-8b-instant) |
 | Notifications | Telegram Bot |
 
@@ -52,7 +52,7 @@ Before setting up, gather these accounts:
 | Service | Purpose | Free? |
 |:--------|:---------|:------|
 | [Groq](https://console.groq.com) | AI for chatbot | ✅ 60K tokens/min |
-| [Neon](https://neon.tech) | PostgreSQL database | ✅ |
+| [Replit](https://replit.com) | Hosting + Database | ✅ Free tier |
 | [Telegram Bot](https://t.me/BotFather) | Contact notifications | ✅ |
 
 ---
@@ -75,9 +75,8 @@ pip install -r requirements.txt
 ### Step 3: Set Environment Variables
 
 ```bash
-# Required
+# Required (for chatbot)
 export GROQ_API_KEY="gsk_your_groq_key"
-export DATABASE_URL="postgresql://user:pass@host/neondb?sslmode=require"
 
 # Optional (for Telegram notifications)
 export TELEGRAM_BOT_TOKEN="your_bot_token"
@@ -86,11 +85,15 @@ export TELEGRAM_CHAT_ID="your_chat_id"
 # Optional (for admin dashboard)
 export ADMIN_USERNAME="admin"
 export ADMIN_PASSWORD="your_password"
+
+# Database: Use Replit's built-in PostgreSQL (see below)
 ```
 
-### Step 4: Run Locally
+### Step 4: Run Locally (with SQLite for testing)
 
 ```bash
+# For local testing without PostgreSQL, use:
+# The app will work with limited features (no booking/contacts)
 python app.py
 ```
 
@@ -102,7 +105,7 @@ python app.py
 
 ---
 
-## ☁️ Deploy to Replit
+## ☁️ Deploy to Replit (Recommended)
 
 ### Step 1: Import from GitHub
 1. Go to **[replit.com](https://replit.com)**
@@ -110,30 +113,29 @@ python app.py
 3. Select **"Import from GitHub"**
 4. Choose this repository
 
-### Step 2: Add Secrets (🔐 icon)
+### Step 2: Add PostgreSQL Database
+1. Click the **Database** icon (🗄️) in the left sidebar
+2. Click **"Create database"** or **"Add PostgreSQL"**
+3. Wait ~30 seconds for it to provision
+
+> ✅ Replit automatically creates `DATABASE_URL` environment variable!
+
+### Step 3: Add Secrets (🔐 icon)
 
 | Secret | Value | Required |
 |:-------|:-------|:---------|
 | `GROQ_API_KEY` | Your Groq API key | ✅ Yes |
-| `NEON_URL` | Your Neon PostgreSQL URL | ✅ Yes |
 | `TELEGRAM_BOT_TOKEN` | Your Telegram bot token | Optional |
 | `TELEGRAM_CHAT_ID` | Your Telegram chat ID | Optional |
 | `ADMIN_USERNAME` | Dashboard username | Optional |
 | `ADMIN_PASSWORD` | Dashboard password | Optional |
 
-### Step 3: Get Your Secrets
+### Step 4: Get Your Secrets
 
 #### Groq API Key (Required)
 1. Go to [console.groq.com](https://console.groq.com)
 2. Sign up → API Keys → Create Key
 3. Copy key (starts with `gsk_`)
-
-#### Neon Database (Required)
-1. Go to [neon.tech](https://neon.tech)
-2. Create a new project
-3. Go to **Connection Details**
-4. Copy the connection string
-5. Add `?sslmode=require` at the end
 
 #### Telegram Bot (Optional)
 1. Open [BotFather](https://t.me/BotFather) on Telegram
@@ -141,7 +143,7 @@ python app.py
 3. Copy the bot token
 4. Get your chat ID from [@userinfobot](https://t.me/userinfobot)
 
-### Step 4: Run
+### Step 5: Run
 
 Click **Run** → Done! 🎉
 
@@ -228,7 +230,7 @@ In `index.html`:
 |:---|:------|
 | ✅ Use environment variables | ❌ Commit API keys to GitHub |
 | ✅ Keep backend running for chatbot | ❌ Expect chatbot on static hosting |
-| ✅ Set NEON_URL for database | ❌ Leave database config empty |
+| ✅ Add PostgreSQL via Replit tool | ❌ Add external DATABASE_URL |
 | ✅ Use Replit for deployment | ❌ Use GitHub Pages (no backend) |
 
 ---
@@ -240,8 +242,8 @@ In `index.html`:
 - Check server logs for errors
 
 ### Database not connecting?
-- Verify `NEON_URL` is correct
-- Check Neon project is active
+- Verify PostgreSQL is added via Replit's Database tool
+- Click Database icon → ensure database is active
 
 ### Telegram not receiving messages?
 - Verify both `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set
@@ -265,7 +267,7 @@ MIT License - Feel free to use for your own portfolio!
 |:-------|:-----|
 | Creator | Muhammad Ahmad Humayoun |
 | AI | [Groq](https://groq.com) |
-| Database | [Neon](https://neon.tech) |
+| Hosting & Database | [Replit](https://replit.com) |
 
 ---
 

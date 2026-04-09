@@ -1,12 +1,12 @@
 # 🚀 AI Portfolio Template - Replit Setup Guide
 
 ## Overview
-A neon-themed AI-powered portfolio website with embedded JOGI chatbot. This guide covers deploying on Replit.
+A neon-themed AI-powered portfolio website with embedded JOGI chatbot. This guide covers deploying on Replit using Replit's built-in PostgreSQL database.
 
 ## Architecture
 - **Backend**: Python Flask server (`app.py`)
 - **Frontend**: Vanilla HTML/CSS/JS (`index.html`, `chatbot.html`)
-- **Database**: Neon PostgreSQL (free tier)
+- **Database**: PostgreSQL (Replit's built-in)
 - **AI**: Groq API (llama-3.1-8b-instant model)
 
 ## Project Structure
@@ -31,29 +31,38 @@ A neon-themed AI-powered portfolio website with embedded JOGI chatbot. This guid
 3. Select **"Import from GitHub"**
 4. Choose this repository
 
-### Step 2: Add Environment Secrets
+### Step 2: Add PostgreSQL Database
+1. Click the **Database** icon (🗄️) in the left sidebar
+2. Click **"Create database"** or **"Add PostgreSQL"**
+3. Wait ~30 seconds for it to provision
+
+> ✅ Replit automatically creates `DATABASE_URL` environment variable!
+
+### Step 3: Add Secrets
 Click the **🔐 (Secrets)** icon in the sidebar and add:
 
 | Secret | Value | Required |
 |--------|-------|----------|
 | `GROQ_API_KEY` | Your Groq API key | ✅ Yes |
-| `DATABASE_URL` | Your Neon database URL | ✅ Yes |
 | `TELEGRAM_BOT_TOKEN` | Your Telegram bot token | Optional |
 | `TELEGRAM_CHAT_ID` | Your Telegram chat ID | Optional |
+| `ADMIN_USERNAME` | Dashboard username | Optional |
+| `ADMIN_PASSWORD` | Dashboard password | Optional |
 
-#### Getting Your Groq API Key:
+### Step 4: Get Your Secrets
+
+#### Groq API Key:
 1. Go to [console.groq.com](https://console.groq.com)
 2. Sign up → API Keys → Create Key
 3. Copy the key (starts with `gsk_`)
 
-#### Getting Your Neon Database URL:
-1. Go to [neon.tech](https://neon.tech)
-2. Create a new project
-3. Go to **Connection Details**
-4. Copy the connection string
-5. Add `?sslmode=require` at the end
+#### Telegram Bot (Optional):
+1. Open [BotFather](https://t.me/BotFather) on Telegram
+2. Send `/newbot` and follow instructions
+3. Copy the bot token
+4. Get your chat ID from [@userinfobot](https://t.me/userinfobot)
 
-### Step 3: Run
+### Step 5: Run
 Click the **Run** button (green, top center)
 
 ---
@@ -74,15 +83,16 @@ gunicorn --bind=0.0.0.0:5000 --workers=1 --timeout=120 app:app
 
 ## 📋 Environment Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `GROQ_API_KEY` | AI chatbot API key | `gsk_xxxxxxxx` |
-| `DATABASE_URL` | Neon PostgreSQL URL | `postgresql://...` |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot for notifications | `123456:ABC-DEF` |
-| `TELEGRAM_CHAT_ID` | Telegram chat ID for notifications | `123456789` |
-| `SECRET_KEY` | Flask session secret | Optional |
-| `ADMIN_USERNAME` | Admin panel username | Optional |
-| `ADMIN_PASSWORD` | Admin panel password | Optional |
+> **Note**: `DATABASE_URL` is automatically created when you add PostgreSQL via Replit's Database tool.
+
+| Variable | Description | How to Get |
+|----------|-------------|------------|
+| `GROQ_API_KEY` | AI chatbot API key | [console.groq.com](https://console.groq.com) |
+| `DATABASE_URL` | PostgreSQL (auto) | Click Database icon → Create database |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot | @BotFather on Telegram |
+| `TELEGRAM_CHAT_ID` | Telegram chat ID | @userinfobot on Telegram |
+| `ADMIN_USERNAME` | Admin panel username | Set in Secrets (optional) |
+| `ADMIN_PASSWORD` | Admin panel password | Set in Secrets (optional) |
 
 ---
 
@@ -95,6 +105,7 @@ gunicorn --bind=0.0.0.0:5000 --workers=1 --timeout=120 app:app
 | 📧 **Contact Form** | Get visitor messages via Telegram |
 | 🎵 **Music Player** | Background music with visuals |
 | 🎤 **Voice Commands** | Navigate using voice |
+| 🗄️ **Database** | Replit's built-in PostgreSQL |
 
 ---
 
@@ -104,9 +115,14 @@ gunicorn --bind=0.0.0.0:5000 --workers=1 --timeout=120 app:app
 - Check `GROQ_API_KEY` is set in Secrets
 - Check server logs for errors
 
+### Database not working?
+- Click Database icon in left sidebar
+- Ensure database is created and active
+- `DATABASE_URL` should be auto-created
+
 ### Booking/Contacts not working?
-- Check `DATABASE_URL` is set correctly
-- Ensure Neon DB is active
+- Make sure PostgreSQL is added via Database tool
+- Check that database shows as "Active" in the Database panel
 
 ### Telegram not receiving messages?
 - Check both `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set
@@ -124,4 +140,4 @@ MIT License - Use for your own portfolio!
 
 - **Creator**: Muhammad Ahmad Humayoun
 - **AI**: [Groq](https://groq.com)
-- **Database**: [Neon](https://neon.tech)
+- **Hosting & Database**: [Replit](https://replit.com)

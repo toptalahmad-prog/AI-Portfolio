@@ -12,11 +12,8 @@
 4. [API Key Setup](#-api-key-setup)
 5. [Local Development](#-local-development)
 6. [Deploy to Replit](#-deploy-to-replit)
-7. [Deploy to Railway](#-deploy-to-railway)
-8. [Deploy to Render](#-deploy-to-render)
-9. [Deploy to GitHub Pages](#-deploy-to-github-pages)
-10. [Customization](#-customization)
-11. [Troubleshooting](#-troubleshooting)
+7. [Customization](#-customization)
+8. [Troubleshooting](#-troubleshooting)
 
 ---
 
@@ -36,8 +33,8 @@
 │                   │                           │            │            │
 │                   ▼                           ▼            ▼            │
 │            ┌──────────────┐      ┌──────────────┐  ┌─────────────┐  │
-│            │  index.html │      │ chatbot.html │  │   AI Chat   │  │
-│            │ (Portfolio) │      │ (JOGI Chat) │  │   (Groq)   │  │
+│            │  index.html │      │ chatbot.html  │  │   AI Chat   │  │
+│            │ (Portfolio) │      │ (JOGI Chat)   │  │   (Groq)   │  │
 │            └──────────────┘      └──────────────┘  └─────────────┘  │
 │                                                             │
 └─────────────────────────────────────────────────────────────────────┘
@@ -87,19 +84,8 @@
 │   └── requirements.txt  ← Python packages
 │
 ├── 📄 Configuration
-│   ├── Procfile          ← For deployment
 │   ├── .replit          ← Replit config
 │   └── replit.md       ← Replit instructions
-│
-├── 📊 Data
-│   ├── meetings.csv      ← Booked meetings
-│   └── contacts.csv    ← Contact submissions
-│
-├── 🖼️ Assets
-│   ├── profilepictureAhmad.jpeg
-│   ├── favicon.svg
-│   ├── favicon.ico
-│   └── bgMusic1.mp3
 │
 └── 📝 Documentation
     ├── README.md
@@ -114,7 +100,7 @@
 > 
 > **IMPORTANT**: The API key is stored in environment variables - NEVER in the code!
 
-### Step 1: Get a Free Groq API Key
+### Get a Free Groq API Key
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -136,32 +122,7 @@
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Option 2: Using Environment Variables (Recommended)
-
-Set your API key as an environment variable in your deployment platform:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│           ENVIRONMENT VARIABLE SETUP                     │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  The API key is stored securely in environment         │
-│  variables - NEVER hardcoded in the code!               │
-│                                                         │
-│  Variable Name: GROQ_API_KEY                          │
-│  Your Key: gsk_your_key_here                          │
-│                                                         │
-│  See deployment sections below for platform-          │
-│  specific instructions.                              │
-│                                                         │
-│  ⚠️ NEVER commit API keys to GitHub!                  │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Required Environment Variables
-
-This portfolio requires several environment variables depending on which features you want to use:
+### Environment Variables
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -173,10 +134,10 @@ This portfolio requires several environment variables depending on which feature
 │  Purpose: Powers the JOGI AI chatbot                           │
 │  Get from: https://console.groq.com                            │
 │                                                                  │
-│  📌 DATABASE_URL (REQUIRED for Booking & Contacts)              │
-│  ─────────────────────────────────────────────                  │
+│  📌 DATABASE_URL (Auto-created by Replit)                      │
+│  ─────────────────────────────────────────                      │
 │  Purpose: Stores meeting bookings and contact form messages   │
-│  Get from: https://neon.tech (create free PostgreSQL project)   │
+│  Get from: Add PostgreSQL via Replit's Database tool           │
 │                                                                  │
 │  📌 TELEGRAM_BOT_TOKEN (OPTIONAL)                              │
 │  ─────────────────────────────────────                          │
@@ -196,13 +157,11 @@ This portfolio requires several environment variables depending on which feature
 ```bash
 # Mac/Linux (add to ~/.bashrc or ~/.zshrc for permanent)
 export GROQ_API_KEY="gsk_your_key_here"
-export DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
 export TELEGRAM_BOT_TOKEN="your_bot_token"
 export TELEGRAM_CHAT_ID="your_chat_id"
 
 # Windows PowerShell (temporary)
 $env:GROQ_API_KEY="gsk_your_key_here"
-$env:DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
 
 # Windows Command Prompt (temporary)
 set GROQ_API_KEY=gsk_your_key_here
@@ -243,7 +202,6 @@ pip install -r requirements.txt
 ```bash
 # Set required variables
 export GROQ_API_KEY="gsk_your_key_here"
-export DATABASE_URL="postgresql://neondb_owner:password@host/neondb?sslmode=require"
 
 # Optional: For Telegram notifications
 export TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
@@ -251,11 +209,9 @@ export TELEGRAM_CHAT_ID="your_telegram_chat_id"
 
 # On Windows (PowerShell):
 $env:GROQ_API_KEY="gsk_your_key_here"
-$env:DATABASE_URL="postgresql://neondb_owner:password@host/neondb?sslmode=require"
 
 # On Windows (Command Prompt):
 set GROQ_API_KEY=gsk_your_key_here
-set DATABASE_URL=postgresql://neondb_owner:password@host/neondb?sslmode=require
 ```
 
 ### Step 4: Run the Server
@@ -287,7 +243,7 @@ python app.py
 
 ## ☁️ Deploy to Replit
 
-> Easiest deployment - fully free tier!
+> Easiest deployment - uses Replit's built-in PostgreSQL!
 
 ### Step-by-Step:
 
@@ -304,138 +260,46 @@ python app.py
 │                                                      │
 │  4. Choose your repository                        │
 │                                                      │
-│  5. Add Secrets (click 🔐 icon):                 │
+│  5. Add PostgreSQL Database:                     │
+│     ────────────────────────────────────────     │
+│     • Click Database icon (left sidebar)         │
+│     • Click "Create database"                    │
+│     • Wait ~30 seconds                           │
+│     • DATABASE_URL auto-created!                  │
+│     ────────────────────────────────────────     │
+│                                                      │
+│  6. Add Secrets (click 🔐 icon):                 │
 │     ────────────────────────────────────────     │
 │     GROQ_API_KEY = gsk_your_api_key              │
-│     DATABASE_URL = postgresql://...              │
 │     TELEGRAM_BOT_TOKEN = (optional)              │
 │     TELEGRAM_CHAT_ID = (optional)               │
+│     ADMIN_USERNAME = (optional)                 │
+│     ADMIN_PASSWORD = (optional)                  │
 │     ────────────────────────────────────────     │
 │                                                      │
-│  6. Click "Run" (Green button)                   │
+│  7. Click "Run" (Green button)                   │
 │                                                      │
-│  7. Get your URL from the preview                 │
+│  8. Get your URL from the preview                 │
 │                                                      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Replit Modules
+### What Happens When You Add PostgreSQL:
 
-Your `.replit` should include PostgreSQL for local development:
+1. Replit automatically creates `DATABASE_URL` environment variable
+2. Your app connects to the database automatically
+3. No extra configuration needed!
+
+### Replit Configuration
+
+Your `.replit` should look like this:
 
 ```toml
-modules = ["web", "python-3.12", "postgresql-16"]
+modules = ["web", "python-3.12"]
 
 [deployment]
 run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers=1", "--timeout=120", "app:app"]
 build = ["pip", "install", "-r", "requirements.txt"]
-```
-
-> **Note**: For production, use [Neon](https://neon.tech) free PostgreSQL instead of Replit's PostgreSQL (which requires paid plan).
-
----
-
-## 🚂 Deploy to Railway
-
-> Best for production - free $5 credit/month!
-
-### Steps:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│               DEPLOY TO RAILWAY                           │
-├─────────────────────────────────────────────────────────────┤
-│                                                      │
-│  1. Go to https://railway.app                        │
-│                                                      │
-│  2. Sign up with GitHub                           │
-│                                                      │
-│  3. Click "+ New Project"                        │
-│                                                      │
-│  4. Select "Deploy from GitHub repo"           │
-│                                                      │
-│  5. Choose your repository                     │
-│                                                      │
-│  6. Add Environment Variable:                 │
-│     ──────────────────────────────────────     │
-│     GROQ_API_KEY = gsk_your_api_key            │
-│     ──────────────────────────────────────     ��
-│                                                      │
-│  7. Deploy! 🎉                                │
-│                                                      │
-│  8. Your URL: https://your-app.railway.app     │
-│                                                      │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🎨 Deploy to Render
-
-> Free web service available!
-
-### Steps:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                DEPLOY TO RENDER                           │
-├─────────────────────────────────────────────────────────────┤
-│                                                      │
-│  1. Go to https://render.com                          │
-│                                                      │
-│  2. Create "Web Service"                         │
-│                                                      │
-│  3. Connect GitHub repo                         │
-│                                                      │
-│  4. Configure:                                 │
-│     ──────────────────────────────────────              │
-│     Name: your-portfolio                        │
-│     Branch: main                            │
-│     Build Command: pip install -r requirements.txt │
-│     Start Command: gunicorn app:app        │
-│     ──────────────────────────────────────              │
-│                                                      │
-│  5. Add Environment Variable:              │
-│     ──────────────────────────────────────             │
-│     GROQ_API_KEY = gsk_your_api_key     │
-│     ──────────────────────────────────────             │
-│                                                      │
-│  6. Deploy! 🎉                               │
-│                                                      │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 📄 Deploy to GitHub Pages
-
-> Easy but no backend (static only - no chatbot!)
-
-### Steps:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│            DEPLOY TO GITHUB PAGES                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                      │
-│  1. Go to your GitHub repo                        │
-│                                                      │
-│  2. Settings → Pages                            │
-│                                                      │
-│  3. Source: "Deploy from branch"              │
-│                                                      │
-│  4. Branch: "main"                      │
-│                                                      │
-│  5. Folder: "/" (root)                    │
-│                                                      │
-│  6. Save                                        │
-│                                                      │
-│  7. Your URL: https://username.github.io/ repo │
-│                                                      │
-│  ⚠️ NOTE: No Python backend = no chatbot!    │
-│     JOGI AI won't work on GitHub Pages      │
-│                                                      │
-└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -501,6 +365,7 @@ In `index.html`, find and update:
 | **Page not loading** | Check Flask is running |
 | **Chatbot not responding** | Check API key + internet |
 | **Music not playing** | Check bgMusic1.mp3 exists |
+| **Database error on Replit** | Click Database icon → ensure database is active |
 
 ### Get Help:
 
@@ -508,8 +373,6 @@ In `index.html`, find and update:
 ┌─────────────────────────────────────────────┐
 │           NEED HELP?                        │
 ├─────────────────────────────────────────────┤
-│                                     │
-│  📧 Email: ahmad@xynova.ai            │
 │                                     │
 │  💬 Issues: Open GitHub issue       │
 │                                     │
@@ -530,8 +393,8 @@ MIT License - Use this for your own portfolio!
 
 - **Design**: Muhammad Ahmad Humayoun
 - **AI**: Groq (llama-3.1-8b-instant)
-- **Inspiration**: Neon/cyberpunk aesthetic
+- **Hosting**: Replit
 
 ---
 
-> Made with ❤️ by Ahmad | © 2024
+> Made with ❤️ by Ahmad | © 2026
