@@ -159,6 +159,55 @@ Set your API key as an environment variable in your deployment platform:
 └─────────────────────────────────────────────────────────┘
 ```
 
+### Required Environment Variables
+
+This portfolio requires several environment variables depending on which features you want to use:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              ENVIRONMENT VARIABLES GUIDE                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  📌 GROQ_API_KEY (REQUIRED for Chatbot)                        │
+│  ─────────────────────────────────────                          │
+│  Purpose: Powers the JOGI AI chatbot                           │
+│  Get from: https://console.groq.com                            │
+│                                                                  │
+│  📌 DATABASE_URL (REQUIRED for Booking & Contacts)              │
+│  ─────────────────────────────────────────────                  │
+│  Purpose: Stores meeting bookings and contact form messages   │
+│  Get from: https://neon.tech (create free PostgreSQL project)   │
+│                                                                  │
+│  📌 TELEGRAM_BOT_TOKEN (OPTIONAL)                              │
+│  ─────────────────────────────────────                          │
+│  Purpose: Sends contact form submissions to Telegram          │
+│  Get from: @BotFather on Telegram                               │
+│                                                                  │
+│  📌 TELEGRAM_CHAT_ID (OPTIONAL)                                │
+│  ─────────────────────────────────────                          │
+│  Purpose: Your Telegram chat ID to receive messages            │
+│  Get from: @userinfobot on Telegram                            │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Setting Environment Variables Locally
+
+```bash
+# Mac/Linux (add to ~/.bashrc or ~/.zshrc for permanent)
+export GROQ_API_KEY="gsk_your_key_here"
+export DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
+export TELEGRAM_BOT_TOKEN="your_bot_token"
+export TELEGRAM_CHAT_ID="your_chat_id"
+
+# Windows PowerShell (temporary)
+$env:GROQ_API_KEY="gsk_your_key_here"
+$env:DATABASE_URL="postgresql://user:pass@host/db?sslmode=require"
+
+# Windows Command Prompt (temporary)
+set GROQ_API_KEY=gsk_your_key_here
+```
+
 ---
 
 ## 💻 Local Development
@@ -189,17 +238,24 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Step 3: Set Up API Key
+### Step 3: Set Environment Variables
 
 ```bash
-# Set API key as environment variable
+# Set required variables
 export GROQ_API_KEY="gsk_your_key_here"
+export DATABASE_URL="postgresql://neondb_owner:password@host/neondb?sslmode=require"
 
-# On Windows (Command Prompt):
-set GROQ_API_KEY=gsk_your_key_here
+# Optional: For Telegram notifications
+export TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
+export TELEGRAM_CHAT_ID="your_telegram_chat_id"
 
 # On Windows (PowerShell):
 $env:GROQ_API_KEY="gsk_your_key_here"
+$env:DATABASE_URL="postgresql://neondb_owner:password@host/neondb?sslmode=require"
+
+# On Windows (Command Prompt):
+set GROQ_API_KEY=gsk_your_key_here
+set DATABASE_URL=postgresql://neondb_owner:password@host/neondb?sslmode=require
 ```
 
 ### Step 4: Run the Server
@@ -248,11 +304,13 @@ python app.py
 │                                                      │
 │  4. Choose your repository                        │
 │                                                      │
-│  5. Set Environment Variable:                    │
-│     ─────────────────────────────────           │
-│     Key: GROQ_API_KEY                            │
-│     Value: gsk_your_api_key_here                  │
-│     ─────────────────────────────────           │
+│  5. Add Secrets (click 🔐 icon):                 │
+│     ────────────────────────────────────────     │
+│     GROQ_API_KEY = gsk_your_api_key              │
+│     DATABASE_URL = postgresql://...              │
+│     TELEGRAM_BOT_TOKEN = (optional)              │
+│     TELEGRAM_CHAT_ID = (optional)               │
+│     ────────────────────────────────────────     │
 │                                                      │
 │  6. Click "Run" (Green button)                   │
 │                                                      │
@@ -261,19 +319,19 @@ python app.py
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Replit Configuration (.replit):
+### Replit Modules
+
+Your `.replit` should include PostgreSQL for local development:
 
 ```toml
-modules = ["python-3.10"]
-run = "python app.py"
-hidden = [".github", ".git", "venv", "__pycache__"]
+modules = ["web", "python-3.12", "postgresql-16"]
 
-[env]
-GROQ_API_KEY = ""
-
-[nix]
-channel = "stable"
+[deployment]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers=1", "--timeout=120", "app:app"]
+build = ["pip", "install", "-r", "requirements.txt"]
 ```
+
+> **Note**: For production, use [Neon](https://neon.tech) free PostgreSQL instead of Replit's PostgreSQL (which requires paid plan).
 
 ---
 

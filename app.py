@@ -44,6 +44,78 @@ def get_db():
     conn = psycopg2.connect(db_url)
     return conn
 
+def init_db():
+    """Initialize database tables if they don't exist"""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # Create meetings table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS meetings (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                date VARCHAR(50) NOT NULL,
+                time VARCHAR(50) NOT NULL,
+                topic TEXT,
+                status VARCHAR(50) DEFAULT 'scheduled',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Create contacts table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS contacts (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                message TEXT,
+                date VARCHAR(50) NOT NULL,
+                time VARCHAR(50) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        conn.commit()
+        c.close()
+        conn.close()
+        print("✅ Database tables initialized successfully")
+        return True
+    except Exception as e:
+        print(f"❌ Database initialization failed: {e}")
+        return False
+
+def check_startup_config():
+    """Check and display configuration status"""
+    print("\n" + "="*50)
+    print("🚀 PORTFOLIO STARTUP CONFIGURATION")
+    print("="*50)
+    
+    # Check GROQ_API_KEY
+    groq_key = os.environ.get('GROQ_API_KEY', '')
+    if groq_key:
+        print(f"✅ GROQ_API_KEY: Configured")
+    else:
+        print(f"❌ GROQ_API_KEY: Not set (Chatbot will not work)")
+    
+    # Check DATABASE_URL
+    db_url = os.environ.get('DATABASE_URL', '')
+    if db_url:
+        print(f"✅ DATABASE_URL: Configured")
+    else:
+        print(f"❌ DATABASE_URL: Not set (Booking & Contacts will not work)")
+    
+    # Check Telegram
+    telegram_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    telegram_chat = os.environ.get('TELEGRAM_CHAT_ID', '')
+    if telegram_token and telegram_chat:
+        print(f"✅ TELEGRAM: Configured")
+    else:
+        print(f"⚠️  TELEGRAM: Not configured (Contact form notifications disabled)")
+    
+    print("="*50 + "\n")
+
 def clean_message(content):
     if not content:
         return ""
@@ -1015,8 +1087,17 @@ def serve_static(filename):
     return send_from_directory('.', filename)
 
 if __name__ == '__main__':
+    # Check configuration on startup
+    check_startup_config()
+    
+    # Initialize database tables
+    try:
+        init_db()
+    except Exception as e:
+        print(f"⚠️  Database initialization skipped: {e}")
+    
     port = int(os.environ.get('PORT', 5000))
     host = '0.0.0.0'
-    print(f'\nFlask server starting on {host}:{port}')
-    print(f'Admin panel: http://localhost:{port}/ahmadAdmin')
+    print(f'\n✅ Flask server starting on {host}:{port}')
+    print(f'📋 Admin panel: http://localhost:{port}/ahmadAdmin')
     app.run(host=host, port=port, debug=False)
