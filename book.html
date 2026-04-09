@@ -380,6 +380,112 @@
         .selected-summary strong {
             color: var(--primary);
         }
+
+        /* Timezone Info Styles */
+        .timezone-info {
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .timezone-info h4 {
+            font-size: 0.9rem;
+            color: var(--primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timezone-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .timezone-row:last-child {
+            border-bottom: none;
+        }
+
+        .timezone-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .timezone-time {
+            color: var(--text);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .timezone-diff {
+            color: var(--secondary);
+            font-size: 0.8rem;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .slot-btn {
+            padding: 12px 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .slot-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        .slot-btn:disabled {
+            color: var(--text-muted);
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .slot-btn.selected {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--dark);
+            border-color: transparent;
+            font-weight: 600;
+        }
+
+        .slot-btn .owner-time {
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+
+        .no-slots {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (max-width: 500px) {
+            .slots-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
     </style>
 </head>
 <body>
@@ -416,6 +522,21 @@
 
                 <div class="time-slots">
                     <h4>Available Time Slots</h4>
+                    
+                    <!-- Timezone Info -->
+                    <div class="timezone-info" id="timezoneInfo">
+                        <h4>🌍 Time Information</h4>
+                        <div class="timezone-row">
+                            <span class="timezone-label">Your timezone:</span>
+                            <span class="timezone-time" id="visitorTz">Detecting...</span>
+                        </div>
+                        <div class="timezone-row">
+                            <span class="timezone-label">Meeting host:</span>
+                            <span class="timezone-time" id="ownerTz">-</span>
+                        </div>
+                        <div class="timezone-diff" id="tzDiff"></div>
+                    </div>
+
                     <div class="slots-grid" id="slotsGrid">
                         <div class="no-slots">Select a date to see available slots</div>
                     </div>
@@ -466,6 +587,87 @@
         let currentDate = new Date();
         let selectedDate = null;
         let selectedTime = null;
+        let ownerTimezone = 'Asia/Karachi';
+        let visitorTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        // Timezone mapping for display names
+        const tzNames = {
+            'Asia/Karachi': '🇵🇰 Pakistan (PKT)',
+            'America/New_York': '🇺🇸 New York (EST)',
+            'America/Los_Angeles': '🇺🇸 Los Angeles (PST)',
+            'Europe/London': '🇬🇧 London (GMT)',
+            'Europe/Paris': '🇪🇺 Paris (CET)',
+            'Asia/Dubai': '🇦🇪 Dubai (GST)',
+            'Asia/Kolkata': '🇮🇳 India (IST)',
+            'Asia/Singapore': '🇸🇬 Singapore (SGT)',
+            'Asia/Tokyo': '🇯🇵 Tokyo (JST)',
+            'Australia/Sydney': '🇦🇺 Sydney (AEDT)'
+        };
+
+        const tzOffsets = {
+            'America/Los_Angeles': -8,
+            'America/New_York': -5,
+            'Europe/London': 0,
+            'Europe/Paris': 1,
+            'Asia/Dubai': 4,
+            'Asia/Karachi': 5,
+            'Asia/Kolkata': 5.5,
+            'Asia/Singapore': 8,
+            'Asia/Tokyo': 9,
+            'Australia/Sydney': 11
+        };
+
+        // Initialize timezone info
+        function initTimezone() {
+            document.getElementById('visitorTz').textContent = tzNames[visitorTimezone] || visitorTimezone;
+            
+            // Get owner's timezone from API
+            fetch('/api/slots?date=' + new Date().toISOString().split('T')[0])
+                .then(res => res.json())
+                .then(data => {
+                    ownerTimezone = data.owner_timezone || 'Asia/Karachi';
+                    document.getElementById('ownerTz').textContent = tzNames[ownerTimezone] || ownerTimezone;
+                    updateTimezoneDiff();
+                    renderSlots(); // Re-render slots with timezone info
+                })
+                .catch(() => {
+                    document.getElementById('ownerTz').textContent = tzNames['Asia/Karachi'];
+                });
+        }
+
+        function updateTimezoneDiff() {
+            const visitorOffset = tzOffsets[visitorTimezone] || 0;
+            const ownerOffset = tzOffsets[ownerTimezone] || 5;
+            const diff = ownerOffset - visitorOffset;
+            
+            const diffEl = document.getElementById('tzDiff');
+            if (diff === 0) {
+                diffEl.textContent = '✓ Same timezone!';
+            } else if (diff > 0) {
+                diffEl.textContent = `⏰ You are ${diff} hour${diff > 1 ? 's' : ''} behind the host`;
+            } else {
+                diffEl.textContent = `⏰ You are ${Math.abs(diff)} hour${Math.abs(diff) > 1 ? 's' : ''} ahead of the host`;
+            }
+        }
+
+        function convertTime(time24, fromTz, toTz) {
+            const [hours, minutes] = time24.split(':').map(Number);
+            const fromOffset = tzOffsets[fromTz] || 0;
+            const toOffset = tzOffsets[toTz] || 0;
+            const diff = toOffset - fromOffset;
+            
+            let newHours = hours + diff;
+            if (newHours < 0) newHours += 24;
+            if (newHours >= 24) newHours -= 24;
+            
+            const period = newHours >= 12 ? 'PM' : 'AM';
+            const displayHours = newHours > 12 ? newHours - 12 : (newHours === 0 ? 12 : newHours);
+            return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+        }
+
+        function convertTimeTo(time24, targetTz) {
+            return convertTime(time24, ownerTimezone, targetTz);
+        }
 
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -532,14 +734,28 @@
                 const response = await fetch(`/api/slots?date=${selectedDate}`);
                 const data = await response.json();
                 
+                if (data.owner_timezone) {
+                    ownerTimezone = data.owner_timezone;
+                    document.getElementById('ownerTz').textContent = tzNames[ownerTimezone] || ownerTimezone;
+                    updateTimezoneDiff();
+                }
+                
                 if (data.available.length === 0) {
                     grid.innerHTML = '<div class="no-slots">No slots available on this day</div>';
                     return;
                 }
                 
-                grid.innerHTML = data.available.map(time => 
-                    `<button type="button" class="slot-btn ${selectedTime === time ? 'selected' : ''}" onclick="selectTime('${time}')">${time}</button>`
-                ).join('');
+                grid.innerHTML = data.available.map(time => {
+                    const ownerTime = time;
+                    const visitorTime = convertTimeTo(time, visitorTimezone);
+                    const isSelected = selectedTime === time;
+                    return `
+                        <button type="button" class="slot-btn ${isSelected ? 'selected' : ''}" onclick="selectTime('${time}')">
+                            <span>${visitorTime}</span>
+                            <span class="owner-time">(${ownerTime} host)</span>
+                        </button>
+                    `;
+                }).join('');
             } catch (e) {
                 grid.innerHTML = '<div class="no-slots">Error loading slots</div>';
             }
@@ -608,6 +824,7 @@
         }
 
         renderCalendar();
+        initTimezone();
     </script>
 </body>
 </html>

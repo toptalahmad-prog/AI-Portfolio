@@ -1077,10 +1077,57 @@ ADMIN_HTML = '''
                     No meetings scheduled
                 </div>
             </div>
+
+            <!-- Availability Settings -->
+            <div class="contacts-section" style="margin-top: 40px;">
+                <h2>⚙️ Availability Settings</h2>
+                
+                <!-- Mode Selection -->
+                <div class="settings-card" style="background: var(--dark-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 15px; color: var(--primary);">Availability Mode</h3>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="mode-btn active" data-mode="daily" onclick="setAvailabilityMode('daily')" style="padding: 10px 20px; background: rgba(0,240,255,0.1); border: 1px solid var(--primary); border-radius: 8px; color: var(--primary); cursor: pointer;">📅 Daily</button>
+                        <button class="mode-btn" data-mode="weekly" onclick="setAvailabilityMode('weekly')" style="padding: 10px 20px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); cursor: pointer;">📆 Weekly</button>
+                        <button class="mode-btn" data-mode="monthly" onclick="setAvailabilityMode('monthly')" style="padding: 10px 20px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); cursor: pointer;">📆 Monthly</button>
+                    </div>
+                </div>
+
+                <!-- Timezone Setting -->
+                <div class="settings-card" style="background: var(--dark-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 15px; color: var(--primary);">🌍 Your Timezone</h3>
+                    <select id="ownerTimezone" onchange="saveTimezone(this.value)" style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 1rem;">
+                        <option value="Asia/Karachi">🇵🇰 Pakistan (PKT) - UTC+5</option>
+                        <option value="America/New_York">🇺🇸 New York (EST) - UTC-5</option>
+                        <option value="America/Los_Angeles">🇺🇸 Los Angeles (PST) - UTC-8</option>
+                        <option value="Europe/London">🇬🇧 London (GMT) - UTC+0</option>
+                        <option value="Europe/Paris">🇪🇺 Paris (CET) - UTC+1</option>
+                        <option value="Asia/Dubai">🇦🇪 Dubai (GST) - UTC+4</option>
+                        <option value="Asia/Kolkata">🇮🇳 India (IST) - UTC+5:30</option>
+                        <option value="Asia/Singapore">🇸🇬 Singapore (SGT) - UTC+8</option>
+                        <option value="Asia/Tokyo">🇯🇵 Tokyo (JST) - UTC+9</option>
+                        <option value="Australia/Sydney">🇦🇺 Sydney (AEDT) - UTC+11</option>
+                    </select>
+                </div>
+
+                <!-- Time Slots -->
+                <div class="settings-card" style="background: var(--dark-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 15px; color: var(--primary);">🕐 Available Time Slots</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Select your available meeting times:</p>
+                    
+                    <div id="timeSlotsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;">
+                        <!-- Time slots will be loaded here -->
+                    </div>
+                    
+                    <button onclick="saveAvailability()" style="margin-top: 20px; padding: 12px 24px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; border-radius: 10px; color: var(--dark); font-weight: 600; cursor: pointer;">💾 Save Availability</button>
+                    <p id="saveStatus" style="margin-top: 10px; color: var(--primary); display: none;">✓ Saved successfully!</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        const timeSlots = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"];
+        
         function checkAuth() {
             const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
             if (isLoggedIn === 'true') {
@@ -1088,6 +1135,7 @@ ADMIN_HTML = '''
                 document.getElementById('dashboardSection').classList.add('active');
                 loadContacts();
                 loadMeetings();
+                loadSettings();
             }
         }
 
@@ -1228,6 +1276,125 @@ ADMIN_HTML = '''
             document.getElementById('modalDate').textContent = c.date + ' at ' + c.time;
             document.getElementById('modalMessage').textContent = c.message;
             document.getElementById('messageModal').classList.add('show');
+        }
+
+        // Load settings and availability
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings?_t=' + Date.now());
+                const data = await response.json();
+                
+                if (data.settings) {
+                    // Set timezone
+                    if (data.settings.owner_timezone) {
+                        document.getElementById('ownerTimezone').value = data.settings.owner_timezone;
+                    }
+                    
+                    // Set availability mode
+                    if (data.settings.availability_mode) {
+                        document.querySelectorAll('.mode-btn').forEach(btn => {
+                            btn.classList.remove('active');
+                            btn.style.background = 'transparent';
+                            btn.style.borderColor = 'var(--border)';
+                            btn.style.color = 'var(--text-muted)';
+                            if (btn.dataset.mode === data.settings.availability_mode) {
+                                btn.classList.add('active');
+                                btn.style.background = 'rgba(0,240,255,0.1)';
+                                btn.style.borderColor = 'var(--primary)';
+                                btn.style.color = 'var(--primary)';
+                            }
+                        });
+                    }
+                }
+                
+                // Load time slots into container
+                renderTimeSlots();
+            } catch (e) {
+                console.error('Error loading settings:', e);
+                renderTimeSlots();
+            }
+        }
+
+        function renderTimeSlots() {
+            const container = document.getElementById('timeSlotsContainer');
+            container.innerHTML = timeSlots.map(time => `
+                <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                    <input type="checkbox" value="${time}" class="time-slot-checkbox" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                    <span style="color: var(--text); font-size: 0.9rem;">${time}</span>
+                </label>
+            `).join('');
+        }
+
+        async function setAvailabilityMode(mode) {
+            // Update UI
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = 'transparent';
+                btn.style.borderColor = 'var(--border)';
+                btn.style.color = 'var(--text-muted)';
+            });
+            event.target.classList.add('active');
+            event.target.style.background = 'rgba(0,240,255,0.1)';
+            event.target.style.borderColor = 'var(--primary)';
+            event.target.style.color = 'var(--primary)';
+            
+            // Save to server
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ availability_mode: mode })
+                });
+            } catch (e) {
+                console.error('Error saving mode:', e);
+            }
+        }
+
+        async function saveTimezone(tz) {
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ owner_timezone: tz })
+                });
+                showSaveStatus();
+            } catch (e) {
+                console.error('Error saving timezone:', e);
+            }
+        }
+
+        async function saveAvailability() {
+            const selectedSlots = Array.from(document.querySelectorAll('.time-slot-checkbox:checked')).map(cb => cb.value);
+            
+            // Get current mode
+            const activeMode = document.querySelector('.mode-btn.active');
+            const mode = activeMode ? activeMode.dataset.mode : 'daily';
+            
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        availability_mode: mode,
+                        availability: [{
+                            setting_type: mode,
+                            time_slots: selectedSlots
+                        }]
+                    })
+                });
+                showSaveStatus();
+            } catch (e) {
+                console.error('Error saving availability:', e);
+            }
+        }
+
+        function showSaveStatus() {
+            const status = document.getElementById('saveStatus');
+            status.style.display = 'block';
+            status.textContent = '✓ Saved successfully!';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
         }
 
         function closeModal() {
