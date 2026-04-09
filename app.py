@@ -38,22 +38,11 @@ ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '')
 
 def get_db():
     db_url = os.environ.get('NEON_DATABASE_URL')
-    print(f"DEBUG: NEON_DATABASE_URL found: {bool(db_url)}")
     if not db_url:
         print("WARNING: NEON_DATABASE_URL not set")
         raise Exception("NEON_DATABASE_URL not configured")
-    
-    # Debug: show first 50 chars of URL (masked)
-    masked_url = db_url[:50] + "..." if len(db_url) > 50 else db_url
-    print(f"DEBUG: Attempting to connect to DB: {masked_url}")
-    
-    try:
-        conn = psycopg2.connect(db_url)
-        print("DEBUG: Database connection successful!")
-        return conn
-    except Exception as e:
-        print(f"DEBUG: Database connection FAILED: {e}")
-        raise
+    conn = psycopg2.connect(db_url)
+    return conn
 
 def init_db():
     """Initialize database tables if they don't exist"""
@@ -161,8 +150,7 @@ def check_startup_config():
     # Check NEON_DATABASE_URL
     db_url = os.environ.get('NEON_DATABASE_URL', '')
     if db_url:
-        masked = db_url[:40] + "..." if len(db_url) > 40 else db_url
-        print(f"✅ NEON_DATABASE_URL: Configured ({masked})")
+        print(f"✅ NEON_DATABASE_URL: Configured")
     else:
         print(f"❌ NEON_DATABASE_URL: Not set (Booking & Contacts will not work)")
     
