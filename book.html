@@ -730,9 +730,22 @@
                 return;
             }
 
+            console.log('[FRONTEND] Rendering slots for date:', selectedDate);
+            
             try {
                 const response = await fetch(`/api/slots?date=${selectedDate}`);
+                console.log('[FRONTEND] Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({error: 'Unknown error'}));
+                    console.error('[FRONTEND] API error:', errData);
+                    grid.innerHTML = '<div class="no-slots">Error: ' + (errData.error || 'Failed to load') + '</div>';
+                    return;
+                }
+                
                 const data = await response.json();
+                console.log('[FRONTEND] Received data:', data);
+                console.log('[FRONTEND] Available slots:', data.available);
                 
                 if (data.owner_timezone) {
                     ownerTimezone = data.owner_timezone;
@@ -740,28 +753,36 @@
                     updateTimezoneDiff();
                 }
                 
-                if (data.available.length === 0) {
+                if (!data.available || data.available.length === 0) {
                     grid.innerHTML = '<div class="no-slots">No slots available on this day</div>';
                     return;
                 }
                 
-                grid.innerHTML = data.available.map(time => {
+                // Clear and populate grid
+                grid.innerHTML = '';
+                data.available.forEach(time => {
                     const ownerTime = time;
                     const visitorTime = convertTimeTo(time, visitorTimezone);
                     const isSelected = selectedTime === time;
-                    return `
-                        <button type="button" class="slot-btn ${isSelected ? 'selected' : ''}" onclick="selectTime('${time}')">
-                            <span>${visitorTime}</span>
-                            <span class="owner-time">(${ownerTime} host)</span>
-                        </button>
-                    `;
-                }).join('');
+                    
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'slot-btn' + (isSelected ? ' selected' : '');
+                    btn.onclick = () => selectTime(time);
+                    btn.innerHTML = `<span>${visitorTime}</span><span class="owner-time">(${ownerTime} host)</span>`;
+                    grid.appendChild(btn);
+                });
                 
                 // Update summary with AM/PM
-                const visitorTimeDisplay = convertTimeTo(selectedTime, visitorTimezone);
-                document.getElementById('summaryTime').textContent = visitorTimeDisplay;
+                if (selectedTime) {
+                    const visitorTimeDisplay = convertTimeTo(selectedTime, visitorTimezone);
+                    document.getElementById('summaryTime').textContent = visitorTimeDisplay;
+                }
+                
+                console.log('[FRONTEND] Rendered', data.available.length, 'slots');
             } catch (e) {
-                grid.innerHTML = '<div class="no-slots">Error loading slots</div>';
+                console.error('[FRONTEND] Error loading slots:', e);
+                grid.innerHTML = '<div class="no-slots">Error loading slots: ' + e.message + '</div>';
             }
         }
 
