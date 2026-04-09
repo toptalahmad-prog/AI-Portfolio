@@ -301,10 +301,14 @@ def get_owner_timezone():
         c = conn.cursor()
         c.execute("SELECT setting_value FROM settings WHERE setting_key = 'owner_timezone'")
         result = c.fetchone()
+        print(f"[TIMEZONE] Query result: {result}")
         c.close()
         conn.close()
-        return result[0] if result else 'Asia/Karachi'
-    except:
+        tz = result[0] if result else 'Asia/Karachi'
+        print(f"[TIMEZONE] Returned: {tz}")
+        return tz
+    except Exception as e:
+        print(f"[TIMEZONE] Error: {e}")
         return 'Asia/Karachi'
 
 def get_availability_mode():
@@ -314,38 +318,47 @@ def get_availability_mode():
         c = conn.cursor()
         c.execute("SELECT setting_value FROM settings WHERE setting_key = 'availability_mode'")
         result = c.fetchone()
+        print(f"[MODE] Query result: {result}")
         c.close()
         conn.close()
-        return result[0] if result else 'daily'
-    except:
+        mode = result[0] if result else 'daily'
+        print(f"[MODE] Returned mode: {mode}")
+        return mode
+    except Exception as e:
+        print(f"[MODE] Error getting mode: {e}")
         return 'daily'
 
 def get_available_slots(date_str):
     """Get available slots for a specific date, considering the availability mode"""
+    print(f"[AVAILABILITY] Getting slots for: {date_str}")
     try:
         date_obj = datetime.strptime(date_str, '%Y-%m-%d')
         day_name = date_obj.strftime('%A')
         date_iso = date_obj.strftime('%Y-%m-%d')
+        print(f"[AVAILABILITY] Day: {day_name}, ISO: {date_iso}")
         
         conn = get_db()
         c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         # Check availability mode
         mode = get_availability_mode()
+        print(f"[AVAILABILITY] Mode: {mode}")
         
         if mode == 'monthly':
-            # Check for monthly specific availability
+            print("[AVAILABILITY] Checking monthly mode")
             c.execute("SELECT time_slots FROM availability WHERE setting_type = 'monthly' AND specific_date = %s AND is_active = TRUE", (date_iso,))
             result = c.fetchone()
+            print(f"[AVAILABILITY] Monthly result: {result}")
             if result:
                 c.close()
                 conn.close()
                 return json.loads(result['time_slots'])
         
         if mode == 'weekly':
-            # Weekly mode - same slots every week
+            print("[AVAILABILITY] Checking weekly mode")
             c.execute("SELECT time_slots FROM availability WHERE setting_type = 'weekly' AND is_active = TRUE LIMIT 1")
             result = c.fetchone()
+            print(f"[AVAILABILITY] Weekly result: {result}")
             c.close()
             conn.close()
             if result:
@@ -353,8 +366,10 @@ def get_available_slots(date_str):
             return []
         
         # Daily mode - check specific day
+        print(f"[AVAILABILITY] Checking daily mode for {day_name}")
         c.execute("SELECT time_slots FROM availability WHERE setting_type = 'daily' AND day_of_week = %s AND is_active = TRUE", (day_name,))
         result = c.fetchone()
+        print(f"[AVAILABILITY] Daily result: {result}")
         c.close()
         conn.close()
         
@@ -362,7 +377,7 @@ def get_available_slots(date_str):
             return json.loads(result['time_slots'])
         return []
     except Exception as e:
-        print(f"Error getting slots: {e}")
+        print(f"[AVAILABILITY] Error getting slots: {e}")
         return AVAILABLE_SLOTS.get(day_name, [])
 
 def save_availability(setting_type, day_of_week=None, specific_date=None, time_slots=None, apply_to_all=False):
@@ -565,22 +580,42 @@ So - what brings you here today? Looking for a dev team? Got a wild tech idea? J
 # Booking API Routes
 @app.route('/api/slots', methods=['GET'])
 def get_slots():
+    print(f"[SLOTS] Request received, DATABASE_AVAILABLE={DATABASE_AVAILABLE}")
+    
     if not DATABASE_AVAILABLE:
+        print("[SLOTS] Database not available")
         return jsonify({'error': 'Database not available', 'available': [], 'booked': [], 'owner_timezone': 'Asia/Karachi'}), 200
     
     date = request.args.get('date')
     if not date:
+        print("[SLOTS] No date provided")
         return jsonify({'error': 'Date required'}), 400
+    
+    print(f"[SLOTS] Getting slots for date: {date}")
     
     booked = []
     try:
         meetings = get_meetings()
         booked = [m['time'] for m in meetings if m['date'] == date and m['status'] == 'scheduled']
+        print(f"[SLOTS] Booked slots: {booked}")
     except Exception as e:
-        print(f"Error getting booked slots: {e}")
+        print(f"[SLOTS] Error getting booked slots: {e}")
     
-    available = [s for s in get_available_slots(date) if s not in booked]
-    owner_tz = get_owner_timezone()
+    try:
+        available = get_available_slots(date)
+        print(f"[SLOTS] Available slots from DB: {available}")
+        available = [s for s in available if s not in booked]
+        print(f"[SLOTS] Final available slots: {available}")
+    except Exception as e:
+        print(f"[SLOTS] Error getting available slots: {e}")
+        available = []
+    
+    try:
+        owner_tz = get_owner_timezone()
+        print(f"[SLOTS] Owner timezone: {owner_tz}")
+    except Exception as e:
+        print(f"[SLOTS] Error getting timezone: {e}")
+        owner_tz = 'Asia/Karachi'
     
     return jsonify({
         'date': date, 
