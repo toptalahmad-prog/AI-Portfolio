@@ -173,8 +173,7 @@ def save_meeting(name, email, date, time, topic):
 
 def get_meetings():
     conn = get_db()
-    conn.row_factory = psycopg2.extras.RealDictCursor
-    c = conn.cursor()
+    c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     c.execute('SELECT name, email, date, time, topic, status FROM meetings ORDER BY id DESC')
     rows = c.fetchall()
     c.close()
@@ -194,8 +193,7 @@ def save_contact(name, email, message):
 
 def get_contacts():
     conn = get_db()
-    conn.row_factory = psycopg2.extras.RealDictCursor
-    c = conn.cursor()
+    c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     c.execute('SELECT name, email, message, date, time FROM contacts ORDER BY id DESC')
     rows = c.fetchall()
     c.close()
