@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_from_directory, session, redirect, render_template_string, make_response
+from flask_cors import CORS
 import requests
 import os
 import time
@@ -11,6 +12,9 @@ import re
 
 app = Flask(__name__, static_folder='.')
 app.secret_key = os.environ.get('SECRET_KEY', 'jogi-portfolio-secret-key-xynova-2026')
+
+# Enable CORS for all routes
+CORS(app)
 
 # ==========================================
 # DATABASE CONFIGURATION & VALIDATION
@@ -1342,9 +1346,23 @@ ADMIN_HTML = '''
         }
         
         function loadSettings() {
+            console.log("Loading settings...");
             fetch('/api/settings?_t=' + Date.now())
-                .then(res => res.json())
+                .then(res => {
+                    console.log("Settings response status:", res.status);
+                    return res.json();
+                })
                 .then(data => {
+                    console.log("Settings data:", data);
+                    
+                    // Check for error response
+                    if (data.error) {
+                        console.error("Error loading settings:", data.error);
+                        document.getElementById('saveStatus').textContent = 'Error: ' + data.error;
+                        document.getElementById('saveStatus').style.display = 'block';
+                        return;
+                    }
+                    
                     if (data.settings) {
                         if (data.settings.owner_timezone) {
                             document.getElementById('ownerTimezone').value = data.settings.owner_timezone;
@@ -1355,16 +1373,29 @@ ADMIN_HTML = '''
                         }
                     }
                     
-                    // Load availability data
+                    // Load availability data - initialize with defaults if empty
                     if (data.availability && data.availability.length > 0) {
                         data.availability.forEach(av => {
-                            if (av.setting_type === 'daily' && av.day_of_week) {
-                                dayAvailability[av.day_of_week] = JSON.parse(av.time_slots || '[]');
-                            } else if (av.setting_type === 'weekly') {
-                                weeklySlots = JSON.parse(av.time_slots || '[]');
-                            } else if (av.setting_type === 'monthly') {
-                                monthlySlots = JSON.parse(av.time_slots || '[]');
+                            try {
+                                if (av.setting_type === 'daily' && av.day_of_week) {
+                                    dayAvailability[av.day_of_week] = JSON.parse(av.time_slots || '[]');
+                                } else if (av.setting_type === 'weekly') {
+                                    weeklySlots = JSON.parse(av.time_slots || '[]');
+                                } else if (av.setting_type === 'monthly') {
+                                    monthlySlots = JSON.parse(av.time_slots || '[]');
+                                }
+                            } catch (e) {
+                                console.error("Error parsing availability:", e);
                             }
+                        });
+                    } else {
+                        // Initialize with default slots if no data
+                        console.log("No availability data, using defaults");
+                        const defaultSlots = ["23:00", "00:00", "01:00"];
+                        weeklySlots = defaultSlots;
+                        monthlySlots = defaultSlots;
+                        ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].forEach(day => {
+                            dayAvailability[day] = defaultSlots;
                         });
                     }
                     
@@ -1372,6 +1403,12 @@ ADMIN_HTML = '''
                     loadDaySlots();
                     renderTimeSlots('weeklyTimeSlotsContainer', weeklySlots);
                     renderTimeSlots('monthlyTimeSlotsContainer', monthlySlots);
+                    console.log("Settings loaded successfully");
+                })
+                .catch(error => {
+                    console.error("Error loading settings:", error);
+                    document.getElementById('saveStatus').textContent = 'Error loading settings: ' + error.message;
+                    document.getElementById('saveStatus').style.display = 'block';
                 });
         }
         
@@ -1692,17 +1729,21 @@ ADMIN_HTML = '''
                     }
                 }
                 
-                // Load time slots into container
-                renderTimeSlots();
+                // Load time slots into container - use correct variable name
+                renderTimeSlotsForBooking();
             } catch (e) {
                 console.error('Error loading settings:', e);
-                renderTimeSlots();
+                renderTimeSlotsForBooking();
             }
         }
 
-        function renderTimeSlots() {
+        // Renamed to avoid conflict - this is for booking page
+        function renderTimeSlotsForBooking() {
             const container = document.getElementById('timeSlotsContainer');
-            container.innerHTML = timeSlots.map(time => `
+            if (!container) return;
+            
+            const timeSlots24hr = ["23:00", "00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
+            container.innerHTML = timeSlots24hr.map(time => `
                 <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s;">
                     <input type="checkbox" value="${time}" class="time-slot-checkbox" style="width: 18px; height: 18px; accent-color: var(--primary);">
                     <span style="color: var(--text); font-size: 0.9rem;">${time}</span>
