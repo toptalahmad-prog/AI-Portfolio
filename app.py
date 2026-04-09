@@ -113,6 +113,14 @@ def init_db():
                     ('daily', day, default_slots)
                 )
         
+        # Also insert weekly default if no weekly mode exists
+        c.execute("SELECT COUNT(*) FROM availability WHERE setting_type = 'weekly'")
+        if c.fetchone()[0] == 0:
+            c.execute(
+                'INSERT INTO availability (setting_type, time_slots) VALUES (%s, %s)',
+                ('weekly', '["23:00", "00:00", "01:00"]')
+            )
+        
         # Insert default settings if empty
         c.execute('SELECT COUNT(*) FROM settings')
         if c.fetchone()[0] == 0:
@@ -123,6 +131,11 @@ def init_db():
             c.execute(
                 'INSERT INTO settings (setting_key, setting_value) VALUES (%s, %s)',
                 ('availability_mode', 'daily')
+            )
+            # Also insert for weekly mode in case
+            c.execute(
+                'INSERT INTO availability (setting_type, time_slots, is_active) VALUES (%s, %s, %s)',
+                ('weekly', '["23:00", "00:00", "01:00"]', True)
             )
         
         conn.commit()
@@ -185,13 +198,13 @@ def login_required(f):
 
 # Default available slots
 AVAILABLE_SLOTS = {
-    "Monday": ["10:00", "14:00", "16:00"],
-    "Tuesday": ["10:00", "14:00", "16:00"],
-    "Wednesday": ["10:00", "14:00"],
-    "Thursday": ["10:00", "14:00", "16:00"],
-    "Friday": ["10:00", "14:00"],
-    "Saturday": ["11:00"],
-    "Sunday": []
+    "Monday": ["23:00", "00:00", "01:00"],
+    "Tuesday": ["23:00", "00:00", "01:00"],
+    "Wednesday": ["23:00", "00:00", "01:00"],
+    "Thursday": ["23:00", "00:00", "01:00"],
+    "Friday": ["23:00", "00:00", "01:00"],
+    "Saturday": ["23:00", "00:00", "01:00"],
+    "Sunday": ["23:00", "00:00", "01:00"]
 }
 
 def get_owner_timezone():
