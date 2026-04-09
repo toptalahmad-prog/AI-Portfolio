@@ -104,19 +104,13 @@ def init_db():
         # Insert default availability if empty
         c.execute('SELECT COUNT(*) FROM availability')
         if c.fetchone()[0] == 0:
-            default_slots = [
-                ("Monday", '["10:00", "14:00", "16:00"]'),
-                ("Tuesday", '["10:00", "14:00", "16:00"]'),
-                ("Wednesday", '["10:00", "14:00"]'),
-                ("Thursday", '["10:00", "14:00", "16:00"]'),
-                ("Friday", '["10:00", "14:00"]'),
-                ("Saturday", '["11:00"]'),
-                ("Sunday", '[]')
-            ]
-            for day, slots in default_slots:
+            # Default times: 11pm, 12am, 1am (PKT) = 23:00, 00:00, 01:00
+            default_slots = '["23:00", "00:00", "01:00"]'
+            days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            for day in days:
                 c.execute(
                     'INSERT INTO availability (setting_type, day_of_week, time_slots) VALUES (%s, %s, %s)',
-                    ('daily', day, slots)
+                    ('daily', day, default_slots)
                 )
         
         # Insert default settings if empty
@@ -271,34 +265,55 @@ def get_available_slots(date_str):
         print(f"Error getting slots: {e}")
         return AVAILABLE_SLOTS.get(day_name, [])
 
-def save_availability(setting_type, day_of_week=None, specific_date=None, time_slots=None):
+def save_availability(setting_type, day_of_week=None, specific_date=None, time_slots=None, apply_to_all=False):
     """Save availability settings"""
     try:
         conn = get_db()
         c = conn.cursor()
         
         if setting_type == 'daily':
-            # Update or insert daily availability
-            c.execute('''
-                INSERT INTO availability (setting_type, day_of_week, time_slots, updated_at)
-                VALUES (%s, %s, %s, NOW())
-                ON CONFLICT DO NOTHING
-            ''', (setting_type, day_of_week, json.dumps(time_slots)))
+            if apply_to_all:
+                # Apply same slots to all days of the week
+                days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                for day in days:
+                    c.execute('''
+                        UPDATE availability SET time_slots = %s, updated_at = NOW()
+                        WHERE setting_type = 'daily' AND day_of_week = %s
+                    ''', (json.dumps(time_slots), day))
+            else:
+                # Update or insert specific day
+                c.execute('''
+                    UPDATE availability SET time_slots = %s, updated_at = NOW()
+                    WHERE setting_type = 'daily' AND day_of_week = %s
+                ''', (json.dumps(time_slots), day_of_week))
         
         elif setting_type == 'weekly':
-            # Update weekly slots (applies to all days)
-            c.execute('''
-                UPDATE availability SET time_slots = %s, updated_at = NOW()
-                WHERE setting_type = 'weekly'
-            ''', (json.dumps(time_slots),))
+            # Check if weekly entry exists
+            c.execute("SELECT id FROM availability WHERE setting_type = 'weekly' LIMIT 1")
+            if c.fetchone():
+                c.execute('''
+                    UPDATE availability SET time_slots = %s, updated_at = NOW()
+                    WHERE setting_type = 'weekly'
+                ''', (json.dumps(time_slots),))
+            else:
+                c.execute('''
+                    INSERT INTO availability (setting_type, time_slots, updated_at)
+                    VALUES (%s, %s, NOW())
+                ''', (setting_type, json.dumps(time_slots)))
         
         elif setting_type == 'monthly':
-            # Insert monthly specific date
-            c.execute('''
-                INSERT INTO availability (setting_type, specific_date, time_slots, updated_at)
-                VALUES (%s, %s, %s, NOW())
-                ON CONFLICT DO NOTHING
-            ''', (setting_type, specific_date, json.dumps(time_slots)))
+            # Check if date entry exists
+            c.execute("SELECT id FROM availability WHERE setting_type = 'monthly' AND specific_date = %s", (specific_date,))
+            if c.fetchone():
+                c.execute('''
+                    UPDATE availability SET time_slots = %s, updated_at = NOW()
+                    WHERE setting_type = 'monthly' AND specific_date = %s
+                ''', (json.dumps(time_slots), specific_date))
+            else:
+                c.execute('''
+                    INSERT INTO availability (setting_type, specific_date, time_slots, updated_at)
+                    VALUES (%s, %s, %s, NOW())
+                ''', (setting_type, specific_date, json.dumps(time_slots)))
         
         conn.commit()
         c.close()
@@ -512,7 +527,8 @@ def api_settings():
                     setting_type=av.get('setting_type', 'daily'),
                     day_of_week=av.get('day_of_week'),
                     specific_date=av.get('specific_date'),
-                    time_slots=av.get('time_slots', [])
+                    time_slots=av.get('time_slots', []),
+                    apply_to_all=av.get('apply_to_all', False)
                 )
         
         return jsonify({'success': True})
@@ -1109,24 +1125,284 @@ ADMIN_HTML = '''
                     </select>
                 </div>
 
-                <!-- Time Slots -->
-                <div class="settings-card" style="background: var(--dark-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px;">
-                    <h3 style="font-size: 1rem; margin-bottom: 15px; color: var(--primary);">🕐 Available Time Slots</h3>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Select your available meeting times:</p>
+                <!-- Daily Mode - Day Selector -->
+                <div id="dailyModePanel" class="settings-card" style="background: var(--dark-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 15px; color: var(--primary);">🕐 Daily Availability</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Select days and their time slots:</p>
                     
-                    <div id="timeSlotsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;">
-                        <!-- Time slots will be loaded here -->
+                    <!-- Day Selector -->
+                    <div style="margin-bottom: 20px;">
+                        <label style="color: var(--text-muted); font-size: 0.85rem;">Select Day:</label>
+                        <select id="selectedDay" onchange="loadDaySlots()" style="width: 100%; padding: 10px 16px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Outfit', sans-serif; margin-top: 8px;">
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                            <option value="Friday">Friday</option>
+                            <option value="Saturday">Saturday</option>
+                            <option value="Sunday">Sunday</option>
+                        </select>
                     </div>
                     
-                    <button onclick="saveAvailability()" style="margin-top: 20px; padding: 12px 24px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; border-radius: 10px; color: var(--dark); font-weight: 600; cursor: pointer;">💾 Save Availability</button>
+                    <!-- Time Slots with AM/PM -->
+                    <div id="dailyTimeSlotsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px;">
+                    </div>
+                    
+                    <!-- Apply to All Button -->
+                    <button onclick="applyToAllDays()" style="margin-top: 15px; padding: 10px 20px; background: rgba(255,0,255,0.1); border: 1px solid var(--secondary); border-radius: 8px; color: var(--secondary); font-weight: 500; cursor: pointer;">✨ Apply to All Days</button>
+                    <button onclick="saveDailyAvailability()" style="margin-top: 15px; margin-left: 10px; padding: 10px 20px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; border-radius: 8px; color: var(--dark); font-weight: 600; cursor: pointer;">💾 Save This Day</button>
                     <p id="saveStatus" style="margin-top: 10px; color: var(--primary); display: none;">✓ Saved successfully!</p>
+                </div>
+
+                <!-- Weekly Mode -->
+                <div id="weeklyModePanel" class="settings-card" style="display:none; background: var(--dark-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 15px; color: var(--primary);">🕐 Weekly Availability</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Same time slots for all days of the week:</p>
+                    
+                    <div id="weeklyTimeSlotsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px;">
+                    </div>
+                    
+                    <button onclick="saveWeeklyAvailability()" style="margin-top: 20px; padding: 12px 24px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; border-radius: 10px; color: var(--dark); font-weight: 600; cursor: pointer;">💾 Save Weekly Availability</button>
+                </div>
+
+                <!-- Monthly Mode -->
+                <div id="monthlyModePanel" class="settings-card" style="display:none; background: var(--dark-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 15px; color: var(--primary);">🕐 Monthly Availability</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Same time slots for all dates in the month:</p>
+                    
+                    <div id="monthlyTimeSlotsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px;">
+                    </div>
+                    
+                    <button onclick="saveMonthlyAvailability()" style="margin-top: 20px; padding: 12px 24px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; border-radius: 10px; color: var(--dark); font-weight: 600; cursor: pointer;">💾 Save Monthly Availability</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const timeSlots = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"];
+        // Time slots in 24hr format for backend
+        const timeSlots24hr = ["23:00", "00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"];
+        
+        // Convert 24hr to 12hr AM/PM
+        function convertTo12Hour(time24) {
+            const [hours, minutes] = time24.split(':');
+            let h = parseInt(hours);
+            const m = minutes;
+            const period = h >= 12 ? 'PM' : 'AM';
+            if (h === 0) h = 12;
+            else if (h > 12) h -= 12;
+            return `${h}:${m} ${period}`;
+        }
+        
+        // Convert 12hr to 24hr
+        function convertTo24Hour(time12) {
+            const match = time12.match(/(\d+):(\d+)\s+(AM|PM)/i);
+            if (!match) return time12;
+            let hours = parseInt(match[1]);
+            const minutes = match[2];
+            const period = match[3].toUpperCase();
+            if (period === 'PM' && hours !== 12) hours += 12;
+            if (period === 'AM' && hours === 12) hours = 0;
+            return `${hours.toString().padStart(2, '0')}:${minutes}`;
+        }
+        
+        let currentMode = 'daily';
+        let dayAvailability = {}; // Store availability for each day
+        let weeklySlots = [];
+        let monthlySlots = [];
+        
+        function renderTimeSlots(containerId, selectedSlots) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            container.innerHTML = timeSlots24hr.map(time => {
+                const time12 = convertTo12Hour(time);
+                const isSelected = selectedSlots.includes(time);
+                return `
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 10px; background: ${isSelected ? 'rgba(0,240,255,0.15)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                        <input type="checkbox" value="${time}" ${isSelected ? 'checked' : ''} class="time-slot-checkbox" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                        <span style="color: ${isSelected ? 'var(--primary)' : 'var(--text)'}; font-size: 0.85rem; font-weight: ${isSelected ? '600' : '400'}">${time12}</span>
+                    </label>
+                `;
+            }).join('');
+        }
+        
+        function loadDaySlots() {
+            const day = document.getElementById('selectedDay').value;
+            renderTimeSlots('dailyTimeSlotsContainer', dayAvailability[day] || []);
+        }
+        
+        function loadSettings() {
+            fetch('/api/settings?_t=' + Date.now())
+                .then(res => res.json())
+                .then(data => {
+                    if (data.settings) {
+                        if (data.settings.owner_timezone) {
+                            document.getElementById('ownerTimezone').value = data.settings.owner_timezone;
+                        }
+                        if (data.settings.availability_mode) {
+                            currentMode = data.settings.availability_mode;
+                            updateModeUI();
+                        }
+                    }
+                    
+                    // Load availability data
+                    if (data.availability && data.availability.length > 0) {
+                        data.availability.forEach(av => {
+                            if (av.setting_type === 'daily' && av.day_of_week) {
+                                dayAvailability[av.day_of_week] = JSON.parse(av.time_slots || '[]');
+                            } else if (av.setting_type === 'weekly') {
+                                weeklySlots = JSON.parse(av.time_slots || '[]');
+                            } else if (av.setting_type === 'monthly') {
+                                monthlySlots = JSON.parse(av.time_slots || '[]');
+                            }
+                        });
+                    }
+                    
+                    // Initialize UI
+                    loadDaySlots();
+                    renderTimeSlots('weeklyTimeSlotsContainer', weeklySlots);
+                    renderTimeSlots('monthlyTimeSlotsContainer', monthlySlots);
+                });
+        }
+        
+        function updateModeUI() {
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = 'transparent';
+                btn.style.borderColor = 'var(--border)';
+                btn.style.color = 'var(--text-muted)';
+                if (btn.dataset.mode === currentMode) {
+                    btn.classList.add('active');
+                    btn.style.background = 'rgba(0,240,255,0.1)';
+                    btn.style.borderColor = 'var(--primary)';
+                    btn.style.color = 'var(--primary)';
+                }
+            });
+            
+            document.getElementById('dailyModePanel').style.display = currentMode === 'daily' ? 'block' : 'none';
+            document.getElementById('weeklyModePanel').style.display = currentMode === 'weekly' ? 'block' : 'none';
+            document.getElementById('monthlyModePanel').style.display = currentMode === 'monthly' ? 'block' : 'none';
+        }
+        
+        async function setAvailabilityMode(mode) {
+            currentMode = mode;
+            updateModeUI();
+            
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ availability_mode: mode })
+                });
+            } catch (e) {
+                console.error('Error saving mode:', e);
+            }
+        }
+        
+        async function saveDailyAvailability() {
+            const day = document.getElementById('selectedDay').value;
+            const selectedSlots = Array.from(document.querySelectorAll('#dailyTimeSlotsContainer .time-slot-checkbox:checked')).map(cb => cb.value);
+            dayAvailability[day] = selectedSlots;
+            
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        availability_mode: 'daily',
+                        availability: [{
+                            setting_type: 'daily',
+                            day_of_week: day,
+                            time_slots: selectedSlots
+                        }]
+                    })
+                });
+                showSaveStatus();
+            } catch (e) {
+                console.error('Error saving daily availability:', e);
+            }
+        }
+        
+        async function applyToAllDays() {
+            const selectedSlots = Array.from(document.querySelectorAll('#dailyTimeSlotsContainer .time-slot-checkbox:checked')).map(cb => cb.value);
+            
+            // Apply to all days
+            const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+            days.forEach(day => {
+                dayAvailability[day] = [...selectedSlots];
+            });
+            
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        availability_mode: 'daily',
+                        availability: [{
+                            setting_type: 'daily',
+                            day_of_week: 'Monday',
+                            time_slots: selectedSlots,
+                            apply_to_all: true
+                        }]
+                    })
+                });
+                showSaveStatus();
+            } catch (e) {
+                console.error('Error applying to all days:', e);
+            }
+        }
+        
+        async function saveWeeklyAvailability() {
+            const selectedSlots = Array.from(document.querySelectorAll('#weeklyTimeSlotsContainer .time-slot-checkbox:checked')).map(cb => cb.value);
+            
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        availability_mode: 'weekly',
+                        availability: [{
+                            setting_type: 'weekly',
+                            time_slots: selectedSlots
+                        }]
+                    })
+                });
+                showSaveStatus();
+            } catch (e) {
+                console.error('Error saving weekly availability:', e);
+            }
+        }
+        
+        async function saveMonthlyAvailability() {
+            const selectedSlots = Array.from(document.querySelectorAll('#monthlyTimeSlotsContainer .time-slot-checkbox:checked')).map(cb => cb.value);
+            
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        availability_mode: 'monthly',
+                        availability: [{
+                            setting_type: 'monthly',
+                            time_slots: selectedSlots
+                        }]
+                    })
+                });
+                showSaveStatus();
+            } catch (e) {
+                console.error('Error saving monthly availability:', e);
+            }
+        }
+        
+        function showSaveStatus() {
+            const status = document.getElementById('saveStatus');
+            status.style.display = 'block';
+            status.textContent = '✓ Saved successfully!';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
         
         function checkAuth() {
             const isLoggedIn = sessionStorage.getItem('adminLoggedIn');

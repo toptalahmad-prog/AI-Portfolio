@@ -756,6 +756,10 @@
                         </button>
                     `;
                 }).join('');
+                
+                // Update summary with AM/PM
+                const visitorTimeDisplay = convertTimeTo(selectedTime, visitorTimezone);
+                document.getElementById('summaryTime').textContent = visitorTimeDisplay;
             } catch (e) {
                 grid.innerHTML = '<div class="no-slots">Error loading slots</div>';
             }
