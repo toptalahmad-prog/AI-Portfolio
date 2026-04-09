@@ -7,15 +7,43 @@ from datetime import datetime
 from functools import wraps
 import psycopg2
 import psycopg2.extras
+import re
 
 app = Flask(__name__, static_folder='.')
 app.secret_key = os.environ.get('SECRET_KEY', 'jogi-portfolio-secret-key-xynova-2026')
 
-# Telegram Bot Configuration
+# ==========================================
+# DATABASE CONFIGURATION & VALIDATION
+# ==========================================
+
+NEON_URL = os.environ.get('NEON_URL', '').strip()
+
+# Validate NEON_URL format on startup
+def validate_neon_url():
+    if not NEON_URL:
+        return False, "NEON_URL not set"
+    
+    # Check it starts with postgres:// or postgresql://
+    if not (NEON_URL.startswith('postgres://') or NEON_URL.startswith('postgresql://')):
+        return False, f"Invalid NEON_URL format. Must start with 'postgres://' or 'postgresql://', got: {NEON_URL[:20]}..."
+    
+    # Check it contains @ (has password/host)
+    if '@' not in NEON_URL:
+        return False, "Invalid NEON_URL - missing @ (should contain user:password@host)"
+    
+    return True, "Valid"
+
+is_valid_neon, neon_validation_msg = validate_neon_url()
+
+# ==========================================
+# TELEGRAM BOT CONFIGURATION
+# ==========================================
+
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
 
 def send_telegram_message(message):
+    """Send message via Telegram Bot"""
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         print("Telegram not configured - set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID")
         return False
@@ -33,19 +61,57 @@ def send_telegram_message(message):
         print(f"Telegram error: {e}")
         return False
 
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', '')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '')
+# Admin credentials - Replit secrets fix
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', '') or os.environ.get('ADMIN_USER', '')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '') or os.environ.get('ADMIN_PASS', '')
+
+# Database available flag - for graceful fallback
+DATABASE_AVAILABLE = False
+DB_INIT_MESSAGE = ""
 
 def get_db():
-    db_url = os.environ.get('NEON_URL')
-    if not db_url:
-        print("WARNING: NEON_URL not set")
-        raise Exception("NEON_URL not configured")
-    conn = psycopg2.connect(db_url)
-    return conn
+    """Get database connection with proper error handling"""
+    if not is_valid_neon:
+        raise Exception(f"Database not configured: {neon_validation_msg}")
+    try:
+        conn = psycopg2.connect(NEON_URL)
+        return conn
+    except psycopg2.Error as e:
+        raise Exception(f"Database connection failed: {str(e)[:100]}")
+    except Exception as e:
+        raise Exception(f"Database error: {str(e)[:100]}")
+
+def verify_db_connection():
+    """Test database connection on startup"""
+    global DATABASE_AVAILABLE, DB_INIT_MESSAGE
+    try:
+        if not is_valid_neon:
+            DATABASE_AVAILABLE = False
+            DB_INIT_MESSAGE = neon_validation_msg
+            print(f"⚠️  Database: {DB_INIT_MESSAGE}")
+            return False
+            
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('SELECT 1')
+        c.close()
+        conn.close()
+        DATABASE_AVAILABLE = True
+        DB_INIT_MESSAGE = "Connected successfully"
+        print(f"✅ Database: Connected and ready")
+        return True
+    except Exception as e:
+        DATABASE_AVAILABLE = False
+        DB_INIT_MESSAGE = str(e)[:100]
+        print(f"❌ Database connection failed: {DB_INIT_MESSAGE}")
+        return False
 
 def init_db():
     """Initialize database tables if they don't exist"""
+    if not is_valid_neon:
+        print(f"⚠️  Database initialization skipped: {neon_validation_msg}")
+        return False
+        
     try:
         conn = get_db()
         c = conn.cursor()
@@ -104,7 +170,6 @@ def init_db():
         # Insert default availability if empty
         c.execute('SELECT COUNT(*) FROM availability')
         if c.fetchone()[0] == 0:
-            # Default times: 11pm, 12am, 1am (PKT) = 23:00, 00:00, 01:00
             default_slots = '["23:00", "00:00", "01:00"]'
             days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
             for day in days:
@@ -113,7 +178,6 @@ def init_db():
                     ('daily', day, default_slots)
                 )
         
-        # Also insert weekly default if no weekly mode exists
         c.execute("SELECT COUNT(*) FROM availability WHERE setting_type = 'weekly'")
         if c.fetchone()[0] == 0:
             c.execute(
@@ -121,7 +185,6 @@ def init_db():
                 ('weekly', '["23:00", "00:00", "01:00"]')
             )
         
-        # Insert default settings if empty
         c.execute('SELECT COUNT(*) FROM settings')
         if c.fetchone()[0] == 0:
             c.execute(
@@ -132,7 +195,6 @@ def init_db():
                 'INSERT INTO settings (setting_key, setting_value) VALUES (%s, %s)',
                 ('availability_mode', 'daily')
             )
-            # Also insert for weekly mode in case
             c.execute(
                 'INSERT INTO availability (setting_type, time_slots, is_active) VALUES (%s, %s, %s)',
                 ('weekly', '["23:00", "00:00", "01:00"]', True)
@@ -161,11 +223,16 @@ def check_startup_config():
         print(f"❌ GROQ_API_KEY: Not set (Chatbot will not work)")
     
     # Check NEON_URL
-    db_url = os.environ.get('NEON_URL', '')
-    if db_url:
-        print(f"✅ NEON_URL: Configured")
+    if is_valid_neon:
+        print(f"✅ NEON_URL: Valid format")
     else:
-        print(f"❌ NEON_URL: Not set (Booking & Contacts will not work)")
+        print(f"❌ NEON_URL: {neon_validation_msg}")
+    
+    # Check database connection
+    if DATABASE_AVAILABLE:
+        print(f"✅ Database: Connected and ready")
+    else:
+        print(f"⚠️  Database: {DB_INIT_MESSAGE}")
     
     # Check Telegram
     telegram_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
@@ -478,6 +545,9 @@ So - what brings you here today? Looking for a dev team? Got a wild tech idea? J
 # Booking API Routes
 @app.route('/api/slots', methods=['GET'])
 def get_slots():
+    if not DATABASE_AVAILABLE:
+        return jsonify({'error': 'Database not available', 'available': [], 'booked': [], 'owner_timezone': 'Asia/Karachi'}), 200
+    
     date = request.args.get('date')
     if not date:
         return jsonify({'error': 'Date required'}), 400
@@ -486,12 +556,10 @@ def get_slots():
     try:
         meetings = get_meetings()
         booked = [m['time'] for m in meetings if m['date'] == date and m['status'] == 'scheduled']
-    except:
-        pass
+    except Exception as e:
+        print(f"Error getting booked slots: {e}")
     
     available = [s for s in get_available_slots(date) if s not in booked]
-    
-    # Get owner's timezone
     owner_tz = get_owner_timezone()
     
     return jsonify({
@@ -501,9 +569,28 @@ def get_slots():
         'owner_timezone': owner_tz
     })
 
+@app.route('/api/health')
+def health_check():
+    """Health check endpoint to verify database and API status"""
+    return jsonify({
+        'status': 'ok',
+        'database': {
+            'configured': is_valid_neon,
+            'available': DATABASE_AVAILABLE,
+            'message': DB_INIT_MESSAGE
+        },
+        'api': {
+            'chatbot': bool(os.environ.get('GROQ_API_KEY', '')),
+            'telegram': bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID)
+        }
+    })
+
 @app.route('/api/settings', methods=['GET', 'POST'])
 def api_settings():
     """Get or save settings"""
+    if not DATABASE_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 503
+    
     if request.method == 'GET':
         try:
             conn = get_db()
@@ -550,6 +637,9 @@ def api_settings():
 
 @app.route('/api/book', methods=['POST'])
 def book_meeting():
+    if not DATABASE_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Booking system temporarily unavailable. Database not connected.'}), 503
+    
     try:
         data = request.get_json()
         name = data.get('name', '').strip()
@@ -580,6 +670,9 @@ def book_meeting():
 
 @app.route('/api/meetings')
 def api_meetings():
+    if not DATABASE_AVAILABLE:
+        return jsonify([]), 200
+    
     meetings = get_meetings()
     response = jsonify(meetings)
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -662,6 +755,9 @@ def chat():
 
 @app.route('/api/contact', methods=['POST'])
 def contact():
+    if not DATABASE_AVAILABLE:
+        return jsonify({'success': False, 'error': 'Contact form temporarily unavailable. Database not connected.'}), 503
+    
     try:
         data = request.get_json()
         name = data.get('name', '').strip()
@@ -1734,24 +1830,36 @@ def admin_login():
 @app.route('/api/admin/contacts')
 @login_required
 def admin_contacts():
-    print(f"Loading contacts, session: {session.get('logged_in')}")
-    contacts = get_contacts()
-    print(f"Found {len(contacts)} contacts")
-    response = jsonify(contacts)
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    return response
+    if not DATABASE_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 503
+    try:
+        print(f"Loading contacts, session: {session.get('logged_in')}")
+        contacts = get_contacts()
+        print(f"Found {len(contacts)} contacts")
+        response = jsonify(contacts)
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        return response
+    except Exception as e:
+        print(f"Admin contacts error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/meetings')
 @login_required
 def admin_meetings():
-    print(f"Loading meetings, session: {session.get('logged_in')}")
-    meetings = get_meetings()
-    print(f"Found {len(meetings)} meetings")
-    response = jsonify(meetings)
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    return response
+    if not DATABASE_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 503
+    try:
+        print(f"Loading meetings, session: {session.get('logged_in')}")
+        meetings = get_meetings()
+        print(f"Found {len(meetings)} meetings")
+        response = jsonify(meetings)
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        return response
+    except Exception as e:
+        print(f"Admin meetings error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/logout')
 def admin_logout():
@@ -1780,16 +1888,32 @@ def serve_static(filename):
         return send_from_directory('.', filename, mimetype='audio/mpeg')
     return send_from_directory('.', filename)
 
-if __name__ == '__main__':
-    # Check configuration on startup
+# ==========================================
+# STARTUP INITIALIZATION (Works with gunicorn)
+# ==========================================
+
+def initialize_app():
+    """Initialize app - runs both with python app.py AND gunicorn"""
+    print("\n" + "="*50)
+    print("🚀 INITIALIZING PORTFOLIO")
+    print("="*50)
+    
+    # Verify database connection
+    verify_db_connection()
+    
+    # Initialize database tables if connected
+    if DATABASE_AVAILABLE:
+        init_db()
+    
+    # Show config status
     check_startup_config()
     
-    # Initialize database tables
-    try:
-        init_db()
-    except Exception as e:
-        print(f"⚠️  Database initialization skipped: {e}")
-    
+    print("="*50 + "\n")
+
+# Run initialization at module load (works with gunicorn)
+initialize_app()
+
+if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     host = '0.0.0.0'
     print(f'\n✅ Flask server starting on {host}:{port}')
