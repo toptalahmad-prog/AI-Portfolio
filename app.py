@@ -825,6 +825,109 @@ def debug_availability():
     except Exception as e:
         return jsonify({'error': str(e)})
 
+@app.route('/api/availability/markers')
+def get_availability_markers():
+    """Get availability markers for a month (for calendar visual indicators)"""
+    if not DATABASE_AVAILABLE:
+        return jsonify({'markers': {}})
+    
+    year = request.args.get('year', type=int)
+    month = request.args.get('month', type=int)
+    mode = request.args.get('mode', 'daily')
+    
+    if not year or not month:
+        return jsonify({'markers': {}})
+    
+    try:
+        conn = get_db()
+        c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        markers = {}
+        
+        if mode == 'daily':
+            # Get specific dates that have custom availability
+            start_date = f"{year}-{month:02d}-01"
+            if month == 12:
+                end_date = f"{year+1}-01-01"
+            else:
+                end_date = f"{year}-{month+1:02d}-01"
+            
+            c.execute("""
+                SELECT specific_date, time_slots FROM availability 
+                WHERE setting_type = 'daily' 
+                AND specific_date >= %s 
+                AND specific_date < %s
+                AND is_active = TRUE
+            """, (start_date, end_date))
+            
+            for row in c.fetchall():
+                date_str = str(row['specific_date'])
+                slots = json.loads(row['time_slots'])
+                markers[date_str] = {
+                    'count': len(slots),
+                    'slots': slots
+                }
+            
+            # Also get day-of-week availability
+            c.execute("""
+                SELECT day_of_week, time_slots FROM availability 
+                WHERE setting_type = 'daily' 
+                AND day_of_week IS NOT NULL
+                AND is_active = TRUE
+            """)
+            day_slots = {}
+            for row in c.fetchall():
+                day_slots[row['day_of_week']] = len(json.loads(row['time_slots']))
+        
+        elif mode == 'weekly':
+            # Get week-specific availability
+            c.execute("""
+                SELECT specific_date, time_slots FROM availability 
+                WHERE setting_type = 'weekly' 
+                AND specific_date IS NOT NULL
+                AND is_active = TRUE
+            """)
+            for row in c.fetchall():
+                if row['specific_date']:
+                    date_str = str(row['specific_date'])
+                    slots = json.loads(row['time_slots'])
+                    markers[date_str] = {
+                        'count': len(slots),
+                        'slots': slots
+                    }
+        
+        elif mode == 'monthly':
+            # Get month-specific availability
+            start_date = f"{year}-{month:02d}-01"
+            if month == 12:
+                end_date = f"{year+1}-01-01"
+            else:
+                end_date = f"{year}-{month+1:02d}-01"
+            
+            c.execute("""
+                SELECT specific_date, time_slots FROM availability 
+                WHERE setting_type = 'monthly' 
+                AND specific_date >= %s 
+                AND specific_date < %s
+                AND is_active = TRUE
+            """, (start_date, end_date))
+            
+            for row in c.fetchall():
+                date_str = str(row['specific_date'])
+                slots = json.loads(row['time_slots'])
+                markers[date_str] = {
+                    'count': len(slots),
+                    'slots': slots
+                }
+        
+        c.close()
+        conn.close()
+        
+        return jsonify({'markers': markers, 'day_slots': day_slots if mode == 'daily' else {}})
+    except Exception as e:
+        print(f"[MARKERS] Error: {e}")
+        return jsonify({'markers': {}, 'day_slots': {}})
+
 @app.route('/api/settings', methods=['GET', 'POST'])
 def api_settings():
     """Get or save settings"""
@@ -1513,6 +1616,16 @@ ADMIN_HTML = '''
                         <span id="selectedDailyDate" style="color: var(--text); font-weight: 600;">Click a date above</span>
                     </div>
                     
+                    <!-- Quick Presets -->
+                    <div style="margin-bottom: 15px;">
+                        <span style="color: var(--text-muted); font-size: 0.85rem; margin-right: 10px;">Quick Presets:</span>
+                        <button onclick="applyPreset('morning')" style="padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.8rem; cursor: pointer; margin-right: 5px;">🌅 Morning</button>
+                        <button onclick="applyPreset('afternoon')" style="padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.8rem; cursor: pointer; margin-right: 5px;">🌆 Afternoon</button>
+                        <button onclick="applyPreset('evening')" style="padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.8rem; cursor: pointer; margin-right: 5px;">🌙 Evening</button>
+                        <button onclick="applyPreset('night')" style="padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.8rem; cursor: pointer; margin-right: 5px;">🌌 Night</button>
+                        <button onclick="applyPreset('allday')" style="padding: 6px 12px; background: rgba(0,240,255,0.1); border: 1px solid var(--primary); border-radius: 6px; color: var(--primary); font-size: 0.8rem; cursor: pointer;">📅 All Day</button>
+                    </div>
+                    
                     <!-- Time Slots with AM/PM -->
                     <div id="dailyTimeSlotsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px;">
                     </div>
@@ -1670,6 +1783,8 @@ ADMIN_HTML = '''
             renderDailyCalendar();
         }
         
+        let dailyMarkers = {};
+        
         function renderDailyCalendar() {
             const year = dailyCurrentDate.getFullYear();
             const month = dailyCurrentDate.getMonth();
@@ -1684,38 +1799,61 @@ ADMIN_HTML = '''
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
-            let html = '';
+            // Fetch availability markers for this month
+            fetch(`/api/availability/markers?year=${year}&month=${month+1}&mode=daily`)
+                .then(res => res.json())
+                .then(data => {
+                    dailyMarkers = data.markers || {};
+                    renderCalendarGrid();
+                })
+                .catch(err => {
+                    console.error('Error loading markers:', err);
+                    renderCalendarGrid();
+                });
             
-            // Day headers
-            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            dayNames.forEach(day => {
-                html += `<div style="text-align: center; padding: 5px; color: var(--text-muted); font-size: 0.7rem;">${day}</div>`;
-            });
-            
-            // Empty cells before first day
-            for (let i = 0; i < startDay; i++) {
-                html += '<div></div>';
-            }
-            
-            // Days of month
-            for (let day = 1; day <= daysInMonth; day++) {
-                const date = new Date(year, month, day);
-                const dateStr = formatDate(date);
-                const isSelected = selectedDailyDate === dateStr;
-                const isPast = date < today;
-                const isToday = date.getTime() === today.getTime();
+            function renderCalendarGrid() {
+                let html = '';
                 
-                html += `<div onclick="selectDailyDate('${dateStr}')" 
-                    style="text-align: center; padding: 10px; 
-                    background: ${isSelected ? 'rgba(0,240,255,0.2)' : isToday ? 'rgba(255,0,255,0.1)' : 'rgba(255,255,255,0.03)'};
-                    border: 1px solid ${isSelected ? 'var(--primary)' : isToday ? 'var(--secondary)' : 'var(--border)'};
-                    border-radius: 8px; cursor: ${isPast ? 'not-allowed' : 'pointer'};
-                    color: ${isPast ? 'var(--text-muted)' : isSelected ? 'var(--primary)' : 'var(--text)'};
-                    opacity: ${isPast ? 0.5 : 1};
-                    font-weight: ${isToday ? '600' : '400'};">${day}</div>`;
+                // Day headers
+                const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                dayNames.forEach(day => {
+                    html += `<div style="text-align: center; padding: 5px; color: var(--text-muted); font-size: 0.7rem;">${day}</div>`;
+                });
+                
+                // Empty cells before first day
+                for (let i = 0; i < startDay; i++) {
+                    html += '<div></div>';
+                }
+                
+                // Days of month
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(year, month, day);
+                    const dateStr = formatDate(date);
+                    const isSelected = selectedDailyDate === dateStr;
+                    const isPast = date < today;
+                    const isToday = date.getTime() === today.getTime();
+                    const marker = dailyMarkers[dateStr];
+                    const hasSlots = marker && marker.count > 0;
+                    
+                    const markerDot = hasSlots 
+                        ? `<div style="width: 6px; height: 6px; background: ${marker.count >= 5 ? 'var(--primary)' : marker.count >= 3 ? 'var(--secondary)' : '#00ff88'}; border-radius: 50%; margin: 4px auto 0;"></div>` 
+                        : '';
+                
+                    html += `<div onclick="selectDailyDate('${dateStr}')" 
+                        style="text-align: center; padding: 8px; 
+                        background: ${isSelected ? 'rgba(0,240,255,0.2)' : isToday ? 'rgba(255,0,255,0.1)' : hasSlots ? 'rgba(0,255,136,0.1)' : 'rgba(255,255,255,0.03)'};
+                        border: 1px solid ${isSelected ? 'var(--primary)' : isToday ? 'var(--secondary)' : hasSlots ? '#00ff88' : 'var(--border)'};
+                        border-radius: 8px; cursor: ${isPast ? 'not-allowed' : 'pointer'};
+                        color: ${isPast ? 'var(--text-muted)' : isSelected ? 'var(--primary)' : 'var(--text)'};
+                        opacity: ${isPast ? 0.5 : 1};
+                        font-weight: ${isToday ? '600' : '400'};">
+                        <div>${day}</div>
+                        ${markerDot}
+                    </div>`;
+                }
+                
+                document.getElementById('dailyCalendarGrid').innerHTML = html;
             }
-            
-            document.getElementById('dailyCalendarGrid').innerHTML = html;
         }
         
         function selectDailyDate(dateStr) {
@@ -1972,6 +2110,28 @@ ADMIN_HTML = '''
                     </label>
                 `;
             }).join('');
+        }
+        
+        function applyPreset(preset) {
+            let presetSlots = [];
+            switch(preset) {
+                case 'morning':
+                    presetSlots = ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00'];
+                    break;
+                case 'afternoon':
+                    presetSlots = ['12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+                    break;
+                case 'evening':
+                    presetSlots = ['18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
+                    break;
+                case 'night':
+                    presetSlots = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00'];
+                    break;
+                case 'allday':
+                    presetSlots = [...timeSlots24hr];
+                    break;
+            }
+            renderTimeSlots('dailyTimeSlotsContainer', presetSlots);
         }
         
         function loadSettings() {
