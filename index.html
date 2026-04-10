@@ -1949,6 +1949,373 @@
                 bottom: 160px;
             }
         }
+
+        /* ========================================== */
+        /* BIRD COMPANION STYLES */
+        /* ========================================== */
+        .bird-companion {
+            position: fixed;
+            bottom: 80px;
+            right: 30px;
+            z-index: 9999;
+            cursor: pointer;
+            animation: birdFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes birdFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-15px) rotate(3deg); }
+            50% { transform: translateY(-8px) rotate(0deg); }
+            75% { transform: translateY(-20px) rotate(-3deg); }
+        }
+
+        @keyframes birdBounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        @keyframes birdWingsFlap {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-30deg); }
+        }
+
+        @keyframes birdWingRight {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(30deg); }
+        }
+
+        @keyframes birdThinking {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+
+        .bird-companion.happy {
+            animation: birdFloat 1s ease-in-out infinite;
+        }
+
+        .bird-companion.happy .bird-body {
+            animation: birdBounce 0.5s ease-in-out infinite;
+        }
+
+        .bird-companion.listening .bird-eye-pupil {
+            animation: pupilMove 1s infinite alternate;
+        }
+
+        @keyframes pupilMove {
+            from { transform: translateX(0); }
+            to { transform: translateX(2px); }
+        }
+
+        .bird-companion.thinking .bird-head {
+            animation: birdThinking 1s ease-in-out infinite;
+        }
+
+        .bird-companion.flying .bird-wings .wing.left {
+            animation: birdWingsFlap 0.3s ease-in-out infinite;
+        }
+
+        .bird-companion.flying .bird-wings .wing.right {
+            animation: birdWingRight 0.3s ease-in-out infinite;
+        }
+
+        .bird-bubble {
+            position: absolute;
+            top: -70px;
+            right: 60px;
+            background: white;
+            padding: 12px 18px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            font-size: 0.9rem;
+            color: #333;
+            min-width: 180px;
+            max-width: 220px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .bird-bubble.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .bird-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            right: 30px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid white;
+        }
+
+        .bird-body {
+            position: relative;
+            width: 70px;
+            height: 80px;
+        }
+
+        .bird-body-main {
+            position: absolute;
+            width: 50px;
+            height: 45px;
+            background: linear-gradient(180deg, #FFE066 0%, #FFDB4D 100%);
+            border-radius: 50% 50% 45% 45%;
+            bottom: 15px;
+            left: 10px;
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.1);
+        }
+
+        .bird-head {
+            position: absolute;
+            width: 45px;
+            height: 40px;
+            background: linear-gradient(180deg, #FFE066 0%, #FFDB4D 100%);
+            border-radius: 50% 50% 45% 45%;
+            top: 0;
+            left: 12px;
+            z-index: 2;
+        }
+
+        .bird-hair {
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 15px solid #FFD93D;
+        }
+
+        .bird-eyes {
+            position: absolute;
+            top: 12px;
+            display: flex;
+            gap: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .bird-eye {
+            width: 14px;
+            height: 14px;
+        }
+
+        .eye-white {
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .eye-pupil {
+            width: 8px;
+            height: 8px;
+            background: #333;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .eye-shine {
+            width: 3px;
+            height: 3px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            right: 2px;
+        }
+
+        .bird-cheeks {
+            position: absolute;
+            top: 22px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 5px;
+        }
+
+        .cheek {
+            width: 10px;
+            height: 6px;
+            background: #FFB7B2;
+            border-radius: 50%;
+            opacity: 0.7;
+        }
+
+        .bird-beak {
+            position: absolute;
+            top: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .beak-top {
+            width: 12px;
+            height: 8px;
+            background: #FF9F43;
+            border-radius: 50% 50% 20% 20%;
+            margin-bottom: -3px;
+        }
+
+        .beak-bottom {
+            width: 10px;
+            height: 6px;
+            background: #FFA94D;
+            border-radius: 20% 20% 50% 50%;
+            margin-left: 1px;
+        }
+
+        .bird-wings {
+            position: absolute;
+            top: 30px;
+            width: 100%;
+        }
+
+        .wing {
+            position: absolute;
+            width: 18px;
+            height: 25px;
+            background: linear-gradient(180deg, #FFD93D 0%, #FFDB4D 100%);
+            border-radius: 50% 50% 45% 45%;
+        }
+
+        .wing.left {
+            left: -5px;
+            transform: rotate(15deg);
+        }
+
+        .wing.right {
+            right: -5px;
+            transform: rotate(-15deg);
+        }
+
+        .bird-tail {
+            position: absolute;
+            bottom: 20px;
+            left: 5px;
+            width: 15px;
+            height: 20px;
+            background: linear-gradient(180deg, #FFDB4D 0%, #FFD93D 100%);
+            border-radius: 50% 20% 50% 50%;
+            transform: rotate(-20deg);
+        }
+
+        .bird-feet {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .foot {
+            width: 12px;
+            height: 8px;
+            background: #FF9F43;
+            border-radius: 50% 50% 20% 20%;
+        }
+
+        /* Bird Input Panel */
+        .bird-input-panel {
+            position: fixed;
+            bottom: 180px;
+            right: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 280px;
+            display: none;
+            z-index: 10000;
+        }
+
+        .bird-input-panel.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bird-input-panel h4 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .bird-input-panel input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        .bird-input-panel input:focus {
+            border-color: #FFD93D;
+            outline: none;
+        }
+
+        .bird-input-panel button {
+            background: linear-gradient(135deg, #FFD93D, #FF9F43);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .bird-input-panel .hint {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        .bird-input-panel .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        @media (max-width: 768px) {
+            .bird-companion {
+                bottom: 100px;
+                right: 15px;
+                transform: scale(0.8);
+            }
+            
+            .bird-bubble {
+                right: 40px;
+                top: -60px;
+            }
+            
+            .bird-input-panel {
+                right: 10px;
+                width: calc(100% - 20px);
+                bottom: 150px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2050,8 +2417,62 @@
         <span class="music-toggle-btn">JOGI</span>
     </div>
 
-    <!-- Voice Command Button -->
-    <button class="voice-cmd-btn" id="voiceCmdBtn" onclick="toggleVoiceCommand()" title="Voice Commands - Click for options">
+    <!-- Bird Companion -->
+    <div id="birdCompanion" class="bird-companion">
+        <div class="bird-bubble" id="birdBubble">
+            <span id="bubbleText">Hi! I'm JOGI Jr.! 🐣 Tap me to chat!</span>
+        </div>
+        <div class="bird-body">
+            <div class="bird-head">
+                <div class="bird-hair"></div>
+                <div class="bird-eyes">
+                    <div class="bird-eye left">
+                        <div class="eye-white">
+                            <div class="eye-pupil"></div>
+                            <div class="eye-shine"></div>
+                        </div>
+                    </div>
+                    <div class="bird-eye right">
+                        <div class="eye-white">
+                            <div class="eye-pupil"></div>
+                            <div class="eye-shine"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bird-eyebrows"></div>
+                <div class="bird-cheeks">
+                    <div class="cheek left"></div>
+                    <div class="cheek right"></div>
+                </div>
+                <div class="bird-beak">
+                    <div class="beak-top"></div>
+                    <div class="beak-bottom"></div>
+                </div>
+            </div>
+            <div class="bird-wings">
+                <div class="wing left"></div>
+                <div class="wing right"></div>
+            </div>
+            <div class="bird-body-main"></div>
+            <div class="bird-tail"></div>
+            <div class="bird-feet">
+                <div class="foot left"></div>
+                <div class="foot right"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bird Text Input Panel -->
+    <div class="bird-input-panel" id="birdInputPanel">
+        <button class="close-btn" onclick="closeBirdInput()">×</button>
+        <h4>🐦 Chat with JOGI Jr.</h4>
+        <input type="text" id="birdTextInput" placeholder="Ask me anything...">
+        <button onclick="submitBirdMessage()">Send</button>
+        <p class="hint">Click the mic 🎤 for voice!</p>
+    </div>
+
+    <!-- Voice Command Button (Hidden - replaced by bird) -->
+    <button class="voice-cmd-btn" id="voiceCmdBtn" style="display: none;" onclick="toggleVoiceCommand()" title="Voice Commands">
         <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z"/></svg>
     </button>
     
@@ -3192,6 +3613,313 @@
                 submitVoiceCommand();
             }
         });
+
+        /* ========================================== */
+        /* BIRD COMPANION FUNCTIONALITY */
+        /* ========================================== */
+        
+        const bird = document.getElementById('birdCompanion');
+        const birdBubble = document.getElementById('birdBubble');
+        const bubbleText = document.getElementById('bubbleText');
+        const birdInputPanel = document.getElementById('birdInputPanel');
+        const birdTextInput = document.getElementById('birdTextInput');
+
+        // Bird state
+        let birdState = 'idle'; // idle, listening, thinking, happy, flying
+        let isPanelOpen = false;
+
+        // Show message in bubble
+        function birdSay(text) {
+            bubbleText.textContent = text;
+            birdBubble.classList.add('show');
+            setTimeout(() => {
+                birdBubble.classList.remove('show');
+            }, 4000);
+        }
+
+        // Set bird animation state
+        function setBirdState(state) {
+            birdState = state;
+            bird.className = 'bird-companion ' + state;
+        }
+
+        // Toggle bird panel
+        function toggleBirdPanel() {
+            if (isPanelOpen) {
+                closeBirdInput();
+            } else {
+                openBirdInput();
+            }
+        }
+
+        function openBirdInput() {
+            isPanelOpen = true;
+            setBirdState('happy');
+            birdBubble.classList.remove('show');
+            birdInputPanel.classList.add('show');
+            birdTextInput.focus();
+            setTimeout(() => setBirdState('idle'), 1000);
+        }
+
+        function closeBirdInput() {
+            isPanelOpen = false;
+            birdInputPanel.classList.remove('show');
+            birdSay("Bye! Come back anytime! 🐦");
+        }
+
+        // Submit message
+        async function submitBirdMessage() {
+            const text = birdTextInput.trim();
+            if (!text) return;
+            
+            birdTextInput.value = '';
+            setBirdState('thinking');
+            birdSay("Hmm, let me think...");
+            
+            // First check for navigation commands
+            const navResult = handleNavigation(text);
+            if (navResult.action) {
+                await performNavigation(navResult);
+                return;
+            }
+            
+            // Then check for chat
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: text }]
+                    })
+                });
+                
+                const data = await response.json();
+                setBirdState('happy');
+                
+                if (data.response) {
+                    birdSay(data.response);
+                } else if (data.error) {
+                    birdSay("Oops! " + data.error);
+                }
+            } catch (e) {
+                setBirdState('idle');
+                birdSay("Something went wrong! Try again?");
+            }
+            
+            setTimeout(() => setBirdState('idle'), 3000);
+        }
+
+        // Navigation handling
+        const pageMap = {
+            'home': { page: '/', section: 'home' },
+            'about': { page: '/', section: 'about' },
+            'projects': { page: '/', section: 'projects' },
+            'contact': { page: '/', section: 'contact', buttonText: 'Contact' },
+            'booking': { page: '/book.html', buttonText: 'Book Meeting' },
+            'chatbot': { page: '/chatbot.html', buttonText: 'Chat' },
+            'jogiworld': { page: '/JogiWorld', buttonText: 'JOGI World' },
+            'admin': { page: '/ahmadAdmin' }
+        };
+
+        function handleNavigation(text) {
+            text = text.toLowerCase();
+            
+            // Check for scroll commands (same page)
+            const scrollKeywords = ['go to', 'scroll', 'show me', 'take me to', 'navigate to'];
+            for (const keyword of scrollKeywords) {
+                if (text.includes(keyword)) {
+                    const target = text.replace(keyword, '').trim();
+                    
+                    // Check page map
+                    for (const [key, value] of Object.entries(pageMap)) {
+                        if (target.includes(key)) {
+                            if (!value.page || value.page === '/') {
+                                return { action: 'scroll', section: value.section || key };
+                            } else {
+                                return { action: 'navigate', page: value.page, buttonText: value.buttonText };
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Direct page commands
+            for (const [key, value] of Object.entries(pageMap)) {
+                if (text.includes(key) || text.includes('open ' + key) || text.includes('go to ' + key)) {
+                    if (!value.page || value.page === '/') {
+                        return { action: 'scroll', section: value.section || key };
+                    } else {
+                        return { action: 'navigate', page: value.page, buttonText: value.buttonText };
+                    }
+                }
+            }
+            
+            return { action: null };
+        }
+
+        async function performNavigation(nav) {
+            if (nav.action === 'scroll') {
+                // Same page scroll
+                setBirdState('flying');
+                birdSay("Scrolling to " + nav.section + "...");
+                
+                // Move bird to side
+                bird.style.transition = 'all 0.5s ease';
+                bird.style.right = '90%';
+                bird.style.bottom = '50%';
+                
+                await sleep(500);
+                
+                // Scroll
+                const element = document.getElementById(nav.section) || document.querySelector('.' + nav.section);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                }
+                
+                await sleep(1500);
+                
+                // Return to corner
+                bird.style.right = '30px';
+                bird.style.bottom = '80px';
+                setBirdState('happy');
+                birdSay("Here we are! 🎉");
+                
+            } else if (nav.action === 'navigate') {
+                // Navigate to different page
+                setBirdState('flying');
+                birdSay("Going to " + nav.page + "!");
+                
+                // Find the button
+                const button = findNavigationButton(nav.buttonText);
+                
+                if (button) {
+                    // Move to button
+                    const rect = button.getBoundingClientRect();
+                    bird.style.transition = 'all 0.8s ease';
+                    bird.style.right = (window.innerWidth - rect.right + 50) + 'px';
+                    bird.style.bottom = (window.innerHeight - rect.top - 50) + 'px';
+                    
+                    await sleep(800);
+                    
+                    // Wing tap animation
+                    setBirdState('happy');
+                    await sleep(300);
+                    
+                    // Click
+                    window.location.href = nav.page;
+                } else {
+                    // Direct navigation
+                    window.location.href = nav.page;
+                }
+            }
+            
+            setTimeout(() => setBirdState('idle'), 3000);
+        }
+
+        function findNavigationButton(text) {
+            if (!text) return null;
+            const buttons = document.querySelectorAll('nav a, .nav-link, button');
+            for (const btn of buttons) {
+                if (btn.textContent.toLowerCase().includes(text.toLowerCase())) {
+                    return btn;
+                }
+            }
+            return null;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Voice recognition
+        let birdRecognition = null;
+
+        function initBirdVoice() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                return null;
+            }
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            
+            recognition.onstart = () => {
+                setBirdState('listening');
+                birdSay("I'm listening... 🎤");
+            };
+            
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                birdTextInput.value = transcript;
+                submitBirdMessage();
+            };
+            
+            recognition.onerror = (event) => {
+                setBirdState('idle');
+                if (event.error === 'not-allowed') {
+                    birdSay("Please allow microphone access! 🎤");
+                } else {
+                    birdSay("Couldn't hear that. Try typing!");
+                }
+            };
+            
+            recognition.onend = () => {
+                setBirdState('idle');
+            };
+            
+            return recognition;
+        }
+
+        // Try to start voice
+        function startBirdVoice() {
+            if (!birdRecognition) {
+                birdRecognition = initBirdVoice();
+            }
+            
+            if (birdRecognition) {
+                try {
+                    birdRecognition.start();
+                } catch (e) {
+                    // Already started
+                }
+            } else {
+                birdSay("Voice not supported. Type instead!");
+            }
+        }
+
+        // Click handler for bird
+        bird.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleBirdPanel();
+        });
+
+        // Close panel when clicking elsewhere
+        document.addEventListener('click', function(e) {
+            if (isPanelOpen && !birdInputPanel.contains(e.target) && !bird.contains(e.target)) {
+                closeBirdInput();
+            }
+        });
+
+        // Enter key in bird input
+        birdTextInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                submitBirdMessage();
+            }
+        });
+
+        // Show hint periodically
+        setInterval(() => {
+            if (!isPanelOpen && Math.random() > 0.7) {
+                birdSay("Tap me to chat! 🐣");
+            }
+        }, 15000);
+
+        // Initial greeting
+        setTimeout(() => {
+            birdSay("Hi! I'm JOGI Jr.! 🐣 Tap me to chat!");
+        }, 3000);
     </script>
 </body>
 </html>
