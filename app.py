@@ -350,7 +350,7 @@ def get_available_slots(date_str):
         
         # Check availability mode
         mode = get_availability_mode()
-        print(f"[AVAILABILITY] Mode: {mode}")
+        print(f"[AVAILABILITY] Mode from DB: '{mode}'")
         
         if mode == 'monthly':
             print("[AVAILABILITY] Checking monthly mode")
@@ -795,6 +795,36 @@ def get_availability():
     except Exception as e:
         print(f"[AVAILABILITY API] Error: {e}")
         return jsonify({'slots': []})
+
+@app.route('/api/debug/availability')
+def debug_availability():
+    """Debug endpoint to see what's stored in availability table"""
+    if not DATABASE_AVAILABLE:
+        return jsonify({'error': 'Database not available'})
+    
+    try:
+        conn = get_db()
+        c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Get all availability data
+        c.execute("SELECT setting_type, day_of_week, specific_date, time_slots, is_active FROM availability ORDER BY setting_type, day_of_week, specific_date")
+        rows = c.fetchall()
+        
+        # Get current mode
+        c.execute("SELECT setting_value FROM settings WHERE setting_key = 'availability_mode'")
+        mode_row = c.fetchone()
+        current_mode = mode_row[0] if mode_row else 'daily'
+        
+        c.close()
+        conn.close()
+        
+        return jsonify({
+            'current_mode': current_mode,
+            'availability': [dict(row) for row in rows]
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
 @app.route('/api/settings', methods=['GET', 'POST'])
 def api_settings():
     """Get or save settings"""
@@ -1616,9 +1646,12 @@ ADMIN_HTML = '''
             return new Date(d.setDate(diff));
         }
         
-        // Format date as YYYY-MM-DD
+        // Format date as YYYY-MM-DD (local time, not UTC)
         function formatDate(date) {
-            return date.toISOString().split('T')[0];
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
         
         // Format date for display
