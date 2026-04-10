@@ -205,6 +205,14 @@ def init_db():
                 'INSERT INTO settings (setting_key, setting_value) VALUES (%s, %s)',
                 ('availability_mode', 'daily')
             )
+            
+            # Insert default availability (daily mode - each day)
+            days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            for day in days:
+                c.execute('''
+                    INSERT INTO availability (setting_type, day_of_week, time_slots, is_active)
+                    VALUES (%s, %s, %s, TRUE)
+                ''', ('daily', day, '["23:00", "00:00", "01:00"]'))
         
         conn.commit()
         c.close()
@@ -392,9 +400,12 @@ def get_available_slots(date_str):
         if result:
             c.close()
             conn.close()
-            return json.loads(result['time_slots'])
+            slots = json.loads(result['time_slots'])
+            print(f"[AVAILABILITY] Returning {len(slots)} slots from specific date")
+            return slots
         
         # Fall back to day of week
+        print(f"[AVAILABILITY] Trying day of week: {day_name}")
         c.execute("SELECT time_slots FROM availability WHERE setting_type = 'daily' AND day_of_week = %s AND is_active = TRUE", (day_name,))
         result = c.fetchone()
         print(f"[AVAILABILITY] Daily result (day of week): {result}")
@@ -402,7 +413,11 @@ def get_available_slots(date_str):
         conn.close()
         
         if result:
-            return json.loads(result['time_slots'])
+            slots = json.loads(result['time_slots'])
+            print(f"[AVAILABILITY] Returning {len(slots)} slots from day of week")
+            return slots
+        
+        print("[AVAILABILITY] No slots found, returning empty array")
         return []
     except Exception as e:
         print(f"[AVAILABILITY] Error getting slots: {e}")
@@ -419,10 +434,17 @@ def save_availability(setting_type, day_of_week=None, specific_date=None, time_s
                 # Apply same slots to all days of the week
                 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
                 for day in days:
-                    c.execute('''
-                        UPDATE availability SET time_slots = %s, updated_at = NOW()
-                        WHERE setting_type = 'daily' AND day_of_week = %s
-                    ''', (json.dumps(time_slots), day))
+                    c.execute("SELECT id FROM availability WHERE setting_type = 'daily' AND day_of_week = %s", (day,))
+                    if c.fetchone():
+                        c.execute('''
+                            UPDATE availability SET time_slots = %s, updated_at = NOW()
+                            WHERE setting_type = 'daily' AND day_of_week = %s
+                        ''', (json.dumps(time_slots), day))
+                    else:
+                        c.execute('''
+                            INSERT INTO availability (setting_type, day_of_week, time_slots, is_active)
+                            VALUES (%s, %s, %s, TRUE)
+                        ''', (setting_type, day, json.dumps(time_slots)))
             elif specific_date:
                 # Save for specific date
                 c.execute("SELECT id FROM availability WHERE setting_type = 'daily' AND specific_date = %s", (specific_date,))
@@ -436,12 +458,19 @@ def save_availability(setting_type, day_of_week=None, specific_date=None, time_s
                         INSERT INTO availability (setting_type, specific_date, time_slots, is_active, updated_at)
                         VALUES (%s, %s, %s, TRUE, NOW())
                     ''', (setting_type, specific_date, json.dumps(time_slots)))
-            else:
+            elif day_of_week:
                 # Update or insert specific day
-                c.execute('''
-                    UPDATE availability SET time_slots = %s, updated_at = NOW()
-                    WHERE setting_type = 'daily' AND day_of_week = %s
-                ''', (json.dumps(time_slots), day_of_week))
+                c.execute("SELECT id FROM availability WHERE setting_type = 'daily' AND day_of_week = %s", (day_of_week,))
+                if c.fetchone():
+                    c.execute('''
+                        UPDATE availability SET time_slots = %s, updated_at = NOW()
+                        WHERE setting_type = 'daily' AND day_of_week = %s
+                    ''', (json.dumps(time_slots), day_of_week))
+                else:
+                    c.execute('''
+                        INSERT INTO availability (setting_type, day_of_week, time_slots, is_active)
+                        VALUES (%s, %s, %s, TRUE)
+                    ''', (setting_type, day_of_week, json.dumps(time_slots)))
         
         elif setting_type == 'weekly':
             if specific_date:
