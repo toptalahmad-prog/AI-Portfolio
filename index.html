@@ -2417,10 +2417,10 @@
         <span class="music-toggle-btn">JOGI</span>
     </div>
 
-    <!-- Bird Companion -->
-    <div id="birdCompanion" class="bird-companion">
+    <!-- Bird Companion - Click to activate voice -->
+    <div class="bird-companion" id="birdCompanion">
         <div class="bird-bubble" id="birdBubble">
-            <span id="bubbleText">Hi! I'm JOGI Jr.! 🐣 Tap me to chat!</span>
+            <span id="bubbleText">Tap me to speak! 🎤</span>
         </div>
         <div class="bird-body">
             <div class="bird-head">
@@ -2460,15 +2460,6 @@
                 <div class="foot right"></div>
             </div>
         </div>
-    </div>
-
-    <!-- Bird Text Input Panel -->
-    <div class="bird-input-panel" id="birdInputPanel">
-        <button class="close-btn" onclick="closeBirdInput()">×</button>
-        <h4>🐦 Chat with JOGI Jr.</h4>
-        <input type="text" id="birdTextInput" placeholder="Ask me anything...">
-        <button onclick="submitBirdMessage()">Send</button>
-        <p class="hint">Click the mic 🎤 for voice!</p>
     </div>
 
     <!-- Voice Command Button (Hidden - replaced by bird) -->
@@ -3615,18 +3606,15 @@
         });
 
         /* ========================================== */
-        /* BIRD COMPANION FUNCTIONALITY */
+        /* BIRD COMPANION FUNCTIONALITY - VOICE ONLY */
         /* ========================================== */
         
         const bird = document.getElementById('birdCompanion');
         const birdBubble = document.getElementById('birdBubble');
         const bubbleText = document.getElementById('bubbleText');
-        const birdInputPanel = document.getElementById('birdInputPanel');
-        const birdTextInput = document.getElementById('birdTextInput');
 
         // Bird state
-        let birdState = 'idle'; // idle, listening, thinking, happy, flying
-        let isPanelOpen = false;
+        let birdState = 'idle';
 
         // Show message in bubble
         function birdSay(text) {
@@ -3634,79 +3622,13 @@
             birdBubble.classList.add('show');
             setTimeout(() => {
                 birdBubble.classList.remove('show');
-            }, 4000);
+            }, 3500);
         }
 
         // Set bird animation state
         function setBirdState(state) {
             birdState = state;
             bird.className = 'bird-companion ' + state;
-        }
-
-        // Toggle bird panel
-        function toggleBirdPanel() {
-            if (isPanelOpen) {
-                closeBirdInput();
-            } else {
-                openBirdInput();
-            }
-        }
-
-        function openBirdInput() {
-            isPanelOpen = true;
-            setBirdState('happy');
-            birdBubble.classList.remove('show');
-            birdInputPanel.classList.add('show');
-            birdTextInput.focus();
-            setTimeout(() => setBirdState('idle'), 1000);
-        }
-
-        function closeBirdInput() {
-            isPanelOpen = false;
-            birdInputPanel.classList.remove('show');
-            birdSay("Bye! Come back anytime! 🐦");
-        }
-
-        // Submit message
-        async function submitBirdMessage() {
-            const text = birdTextInput.trim();
-            if (!text) return;
-            
-            birdTextInput.value = '';
-            setBirdState('thinking');
-            birdSay("Hmm, let me think...");
-            
-            // First check for navigation commands
-            const navResult = handleNavigation(text);
-            if (navResult.action) {
-                await performNavigation(navResult);
-                return;
-            }
-            
-            // Then check for chat
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: [{ role: 'user', content: text }]
-                    })
-                });
-                
-                const data = await response.json();
-                setBirdState('happy');
-                
-                if (data.response) {
-                    birdSay(data.response);
-                } else if (data.error) {
-                    birdSay("Oops! " + data.error);
-                }
-            } catch (e) {
-                setBirdState('idle');
-                birdSay("Something went wrong! Try again?");
-            }
-            
-            setTimeout(() => setBirdState('idle'), 3000);
         }
 
         // Navigation handling
@@ -3724,13 +3646,10 @@
         function handleNavigation(text) {
             text = text.toLowerCase();
             
-            // Check for scroll commands (same page)
             const scrollKeywords = ['go to', 'scroll', 'show me', 'take me to', 'navigate to'];
             for (const keyword of scrollKeywords) {
                 if (text.includes(keyword)) {
                     const target = text.replace(keyword, '').trim();
-                    
-                    // Check page map
                     for (const [key, value] of Object.entries(pageMap)) {
                         if (target.includes(key)) {
                             if (!value.page || value.page === '/') {
@@ -3743,7 +3662,6 @@
                 }
             }
             
-            // Direct page commands
             for (const [key, value] of Object.entries(pageMap)) {
                 if (text.includes(key) || text.includes('open ' + key) || text.includes('go to ' + key)) {
                     if (!value.page || value.page === '/') {
@@ -3759,60 +3677,38 @@
 
         async function performNavigation(nav) {
             if (nav.action === 'scroll') {
-                // Same page scroll
                 setBirdState('flying');
                 birdSay("Scrolling to " + nav.section + "...");
-                
-                // Move bird to side
                 bird.style.transition = 'all 0.5s ease';
                 bird.style.right = '90%';
                 bird.style.bottom = '50%';
-                
                 await sleep(500);
-                
-                // Scroll
                 const element = document.getElementById(nav.section) || document.querySelector('.' + nav.section);
                 if (element) {
                     element.scrollIntoView({ behavior: 'smooth' });
                 }
-                
                 await sleep(1500);
-                
-                // Return to corner
                 bird.style.right = '30px';
                 bird.style.bottom = '80px';
                 setBirdState('happy');
                 birdSay("Here we are! 🎉");
-                
             } else if (nav.action === 'navigate') {
-                // Navigate to different page
                 setBirdState('flying');
                 birdSay("Going to " + nav.page + "!");
-                
-                // Find the button
                 const button = findNavigationButton(nav.buttonText);
-                
                 if (button) {
-                    // Move to button
                     const rect = button.getBoundingClientRect();
                     bird.style.transition = 'all 0.8s ease';
                     bird.style.right = (window.innerWidth - rect.right + 50) + 'px';
                     bird.style.bottom = (window.innerHeight - rect.top - 50) + 'px';
-                    
                     await sleep(800);
-                    
-                    // Wing tap animation
                     setBirdState('happy');
                     await sleep(300);
-                    
-                    // Click
                     window.location.href = nav.page;
                 } else {
-                    // Direct navigation
                     window.location.href = nav.page;
                 }
             }
-            
             setTimeout(() => setBirdState('idle'), 3000);
         }
 
@@ -3831,7 +3727,7 @@
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        // Voice recognition
+        // Voice recognition - starts when bird is clicked
         let birdRecognition = null;
 
         function initBirdVoice() {
@@ -3850,18 +3746,31 @@
                 birdSay("I'm listening... 🎤");
             };
             
-            recognition.onresult = (event) => {
+            recognition.onresult = async (event) => {
                 const transcript = event.results[0][0].transcript;
-                birdTextInput.value = transcript;
-                submitBirdMessage();
+                birdSay('"' + transcript + '"');
+                
+                await sleep(1500);
+                
+                const navResult = handleNavigation(transcript);
+                if (navResult.action) {
+                    await performNavigation(navResult);
+                } else {
+                    setBirdState('thinking');
+                    birdSay("Opening chatbot for you...");
+                    await sleep(1500);
+                    window.location.href = '/chatbot.html?question=' + encodeURIComponent(transcript);
+                }
             };
             
             recognition.onerror = (event) => {
                 setBirdState('idle');
                 if (event.error === 'not-allowed') {
-                    birdSay("Please allow microphone access! 🎤");
+                    birdSay("Please allow mic access in browser settings! 🎤");
+                } else if (event.error === 'no-speech') {
+                    birdSay("Didn't hear anything. Tap me again!");
                 } else {
-                    birdSay("Couldn't hear that. Try typing!");
+                    birdSay("Oops! Something went wrong. Try again!");
                 }
             };
             
@@ -3872,54 +3781,40 @@
             return recognition;
         }
 
-        // Try to start voice
-        function startBirdVoice() {
+        // Start voice when bird is clicked
+        bird.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
             if (!birdRecognition) {
                 birdRecognition = initBirdVoice();
             }
             
             if (birdRecognition) {
                 try {
-                    birdRecognition.start();
+                    setBirdState('happy');
+                    birdSay("Tap to speak! 🎤");
+                    setTimeout(() => {
+                        birdRecognition.start();
+                    }, 500);
                 } catch (e) {
-                    // Already started
+                    birdSay("Tap me again to speak!");
                 }
             } else {
-                birdSay("Voice not supported. Type instead!");
-            }
-        }
-
-        // Click handler for bird
-        bird.addEventListener('click', function(e) {
-            e.stopPropagation();
-            toggleBirdPanel();
-        });
-
-        // Close panel when clicking elsewhere
-        document.addEventListener('click', function(e) {
-            if (isPanelOpen && !birdInputPanel.contains(e.target) && !bird.contains(e.target)) {
-                closeBirdInput();
-            }
-        });
-
-        // Enter key in bird input
-        birdTextInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                submitBirdMessage();
+                birdSay("Voice not supported. Try Chrome browser!");
             }
         });
 
         // Show hint periodically
         setInterval(() => {
-            if (!isPanelOpen && Math.random() > 0.7) {
-                birdSay("Tap me to chat! 🐣");
+            if (Math.random() > 0.7) {
+                birdSay("Tap me to talk! 🐦");
             }
-        }, 15000);
+        }, 12000);
 
         // Initial greeting
         setTimeout(() => {
-            birdSay("Hi! I'm JOGI Jr.! 🐣 Tap me to chat!");
-        }, 3000);
+            birdSay("Tap me to speak! 🎤");
+        }, 4000);
     </script>
 </body>
 </html>
