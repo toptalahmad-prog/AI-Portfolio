@@ -8,11 +8,18 @@
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         :root {
             --primary: #00f0ff;
             --secondary: #ff00ff;
             --tertiary: #00ff88;
+            --text: #ffffff;
+            --text-muted: #a0a0b0;
+        }
+
+        [data-theme="light"] {
+            --text: #1a1a1a;
+            --text-muted: #666666;
         }
         
         body {
@@ -77,7 +84,61 @@
         }
         
         .nav-links a:hover { color: var(--primary); }
-        
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            pointer-events: auto;
+        }
+
+        [data-theme="light"] .theme-toggle {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--primary);
+        }
+
+        .theme-toggle svg {
+            width: 22px;
+            height: 22px;
+            fill: #ffffff;
+            transition: fill 0.3s ease;
+        }
+
+        [data-theme="light"] .theme-toggle svg {
+            fill: #333333;
+        }
+
+        .theme-toggle .theme-icon-dark {
+            display: block;
+        }
+
+        .theme-toggle .theme-icon-light {
+            display: none;
+        }
+
+        [data-theme="light"] .theme-toggle .theme-icon-dark {
+            display: none;
+        }
+
+        [data-theme="light"] .theme-toggle .theme-icon-light {
+            display: block;
+        }
+
         .controls-info {
             position: absolute;
             bottom: 30px;
@@ -207,6 +268,10 @@
                 <a href="/chatbot">JOGI AI</a>
                 <a href="/book">Book Meeting</a>
             </div>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                <svg class="theme-icon-dark" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+                <svg class="theme-icon-light" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM11 17.5c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zM7 13.5h2.5v2.5h-2.5V13.5zm9-6.5h2.5v2.5H16.5V7zM5.99 19.42l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41z"/></svg>
+            </button>
         </div>
         
         <div class="click-to-start" id="clickToStart" style="display: none;">
@@ -576,6 +641,41 @@
         }
         
         init();
+
+        // Theme Toggle
+        (function() {
+            const themeToggle = document.getElementById('themeToggle');
+            const STORAGE_KEY = 'portfolio-theme';
+            const DARK = 'dark';
+            const LIGHT = 'light';
+
+            function getSystemTheme() {
+                return window.matchMedia('(prefers-color-scheme: light)').matches ? LIGHT : DARK;
+            }
+
+            function getStoredTheme() {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                return stored === LIGHT || stored === DARK ? stored : null;
+            }
+
+            function setTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem(STORAGE_KEY, theme);
+            }
+
+            function initTheme() {
+                const stored = getStoredTheme();
+                setTheme(stored || getSystemTheme());
+            }
+
+            function toggleTheme() {
+                const current = document.documentElement.getAttribute('data-theme') || DARK;
+                setTheme(current === DARK ? LIGHT : DARK);
+            }
+
+            initTheme();
+            if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
+        })();
     </script>
 </body>
 </html>
