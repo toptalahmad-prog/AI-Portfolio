@@ -2728,47 +2728,8 @@ def ahmadai():
     return send_from_directory(".", "ahmadAI.html")
 
 
-@app.route("/favicon.ico")
-def favicon():
-    return "", 204
-
-
-@app.route("/<path:filename>")
-def serve_static(filename):
-    if filename.endswith(".mp3"):
-        return send_from_directory(".", filename, mimetype="audio/mpeg")
-    return send_from_directory(".", filename)
-
-
 # ==========================================
-# STARTUP INITIALIZATION (Works with gunicorn)
-# ==========================================
-
-
-def initialize_app():
-    """Initialize app - runs both with python app.py AND gunicorn"""
-    print("\n" + "=" * 50)
-    print("🚀 INITIALIZING PORTFOLIO")
-    print("=" * 50)
-
-    # Verify database connection
-    verify_db_connection()
-
-    # Initialize database tables if connected
-    if DATABASE_AVAILABLE:
-        init_db()
-
-    # Show config status
-    check_startup_config()
-
-    print("=" * 50 + "\n")
-
-
-# Run initialization at module load (works with gunicorn)
-initialize_app()
-
-# ==========================================
-# AHMADAI NEWS SYSTEM
+# AHMADAI NEWS API (must be before catch-all)
 # ==========================================
 
 NEWS_DB_PATH = os.environ.get("NEWS_DB_PATH", "portfolio.db")
@@ -2957,6 +2918,46 @@ def start_scheduler():
 
 if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or __name__ == "__main__":
     start_scheduler()
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return "", 204
+
+
+@app.route("/<path:filename>")
+def serve_static(filename):
+    if filename.endswith(".mp3"):
+        return send_from_directory(".", filename, mimetype="audio/mpeg")
+    return send_from_directory(".", filename)
+
+
+# ==========================================
+# STARTUP INITIALIZATION (Works with gunicorn)
+# ==========================================
+
+
+def initialize_app():
+    """Initialize app - runs both with python app.py AND gunicorn"""
+    print("\n" + "=" * 50)
+    print("🚀 INITIALIZING PORTFOLIO")
+    print("=" * 50)
+
+    # Verify database connection
+    verify_db_connection()
+
+    # Initialize database tables if connected
+    if DATABASE_AVAILABLE:
+        init_db()
+
+    # Show config status
+    check_startup_config()
+
+    print("=" * 50 + "\n")
+
+
+# Run initialization at module load (works with gunicorn)
+initialize_app()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
