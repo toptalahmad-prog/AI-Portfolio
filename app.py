@@ -1,4 +1,13 @@
-from flask import Flask, request, jsonify, send_from_directory, session, redirect, render_template_string, make_response
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    send_from_directory,
+    session,
+    redirect,
+    render_template_string,
+    make_response,
+)
 from flask_cors import CORS
 import requests
 import os
@@ -10,9 +19,10 @@ import psycopg2
 import psycopg2.extras
 import re
 from collections import defaultdict
+from apscheduler.schedulers.background import BackgroundScheduler
 
-app = Flask(__name__, static_folder='.')
-app.secret_key = os.environ.get('SECRET_KEY', 'jogi-portfolio-secret-key-xynova-2026')
+app = Flask(__name__, static_folder=".")
+app.secret_key = os.environ.get("SECRET_KEY", "jogi-portfolio-secret-key-xynova-2026")
 
 # Rate limiting for chat API
 RATE_LIMIT = 10  # max requests
@@ -26,22 +36,33 @@ CORS(app)
 # DATABASE CONFIGURATION & VALIDATION
 # ==========================================
 
-DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+
 
 # Validate DATABASE_URL format on startup
 def validate_database_url():
     if not DATABASE_URL:
         return False, "DATABASE_URL not set"
-    
+
     # Check it starts with postgres:// or postgresql://
-    if not (DATABASE_URL.startswith('postgres://') or DATABASE_URL.startswith('postgresql://')):
-        return False, f"Invalid DATABASE_URL format. Must start with 'postgres://' or 'postgresql://', got: {DATABASE_URL[:20]}..."
-    
+    if not (
+        DATABASE_URL.startswith("postgres://")
+        or DATABASE_URL.startswith("postgresql://")
+    ):
+        return (
+            False,
+            f"Invalid DATABASE_URL format. Must start with 'postgres://' or 'postgresql://', got: {DATABASE_URL[:20]}...",
+        )
+
     # Check it contains @ (has password/host)
-    if '@' not in DATABASE_URL:
-        return False, "Invalid DATABASE_URL - missing @ (should contain user:password@host)"
-    
+    if "@" not in DATABASE_URL:
+        return (
+            False,
+            "Invalid DATABASE_URL - missing @ (should contain user:password@host)",
+        )
+
     return True, "Valid"
+
 
 is_valid_db, db_validation_msg = validate_database_url()
 
@@ -49,35 +70,38 @@ is_valid_db, db_validation_msg = validate_database_url()
 # TELEGRAM BOT CONFIGURATION
 # ==========================================
 
-TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+
 
 def send_telegram_message(message):
     """Send message via Telegram Bot"""
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         print("Telegram not configured - set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID")
         return False
-    
+
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        data = {
-            'chat_id': TELEGRAM_CHAT_ID,
-            'text': message,
-            'parse_mode': 'HTML'
-        }
+        data = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "HTML"}
         response = requests.post(url, json=data, timeout=10)
         return response.status_code == 200
     except Exception as e:
         print(f"Telegram error: {e}")
         return False
 
+
 # Admin credentials - Replit secrets fix
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', '') or os.environ.get('ADMIN_USER', '')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '') or os.environ.get('ADMIN_PASS', '')
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "") or os.environ.get(
+    "ADMIN_USER", ""
+)
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "") or os.environ.get(
+    "ADMIN_PASS", ""
+)
 
 # Database available flag - for graceful fallback
 DATABASE_AVAILABLE = False
 DB_INIT_MESSAGE = ""
+
 
 def get_db():
     """Get database connection with proper error handling"""
@@ -91,6 +115,7 @@ def get_db():
     except Exception as e:
         raise Exception(f"Database error: {str(e)[:100]}")
 
+
 def verify_db_connection():
     """Test database connection on startup"""
     global DATABASE_AVAILABLE, DB_INIT_MESSAGE
@@ -100,10 +125,10 @@ def verify_db_connection():
             DB_INIT_MESSAGE = db_validation_msg
             print(f"⚠️  Database: {DB_INIT_MESSAGE}")
             return False
-            
+
         conn = get_db()
         c = conn.cursor()
-        c.execute('SELECT 1')
+        c.execute("SELECT 1")
         c.close()
         conn.close()
         DATABASE_AVAILABLE = True
@@ -116,18 +141,19 @@ def verify_db_connection():
         print(f"❌ Database connection failed: {DB_INIT_MESSAGE}")
         return False
 
+
 def init_db():
     """Initialize database tables if they don't exist"""
     if not is_valid_db:
         print(f"⚠️  Database initialization skipped: {db_validation_msg}")
         return False
-        
+
     try:
         conn = get_db()
         c = conn.cursor()
-        
+
         # Create meetings table
-        c.execute('''
+        c.execute("""
             CREATE TABLE IF NOT EXISTS meetings (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
@@ -138,10 +164,10 @@ def init_db():
                 status VARCHAR(50) DEFAULT 'scheduled',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        ''')
-        
+        """)
+
         # Create contacts table
-        c.execute('''
+        c.execute("""
             CREATE TABLE IF NOT EXISTS contacts (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
@@ -151,10 +177,10 @@ def init_db():
                 time VARCHAR(50) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        ''')
-        
+        """)
+
         # Create availability table
-        c.execute('''
+        c.execute("""
             CREATE TABLE IF NOT EXISTS availability (
                 id SERIAL PRIMARY KEY,
                 setting_type VARCHAR(20) NOT NULL DEFAULT 'weekly',
@@ -165,55 +191,74 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        ''')
-        
+        """)
+
         # Create settings table for timezone configuration
-        c.execute('''
+        c.execute("""
             CREATE TABLE IF NOT EXISTS settings (
                 id SERIAL PRIMARY KEY,
                 setting_key VARCHAR(50) UNIQUE NOT NULL,
                 setting_value TEXT,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        ''')
-        
+        """)
+
         # Insert default availability if empty
-        c.execute('SELECT COUNT(*) FROM availability')
+        c.execute("SELECT COUNT(*) FROM availability")
         if c.fetchone()[0] == 0:
             default_slots = '["23:00", "00:00", "01:00"]'
-            days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            days = [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday",
+            ]
             for day in days:
                 c.execute(
-                    'INSERT INTO availability (setting_type, day_of_week, time_slots) VALUES (%s, %s, %s)',
-                    ('daily', day, default_slots)
+                    "INSERT INTO availability (setting_type, day_of_week, time_slots) VALUES (%s, %s, %s)",
+                    ("daily", day, default_slots),
                 )
-        
+
         c.execute("SELECT COUNT(*) FROM availability WHERE setting_type = 'weekly'")
         if c.fetchone()[0] == 0:
             c.execute(
-                'INSERT INTO availability (setting_type, time_slots) VALUES (%s, %s)',
-                ('weekly', '["23:00", "00:00", "01:00"]')
+                "INSERT INTO availability (setting_type, time_slots) VALUES (%s, %s)",
+                ("weekly", '["23:00", "00:00", "01:00"]'),
             )
-        
-        c.execute('SELECT COUNT(*) FROM settings')
+
+        c.execute("SELECT COUNT(*) FROM settings")
         if c.fetchone()[0] == 0:
             c.execute(
-                'INSERT INTO settings (setting_key, setting_value) VALUES (%s, %s)',
-                ('owner_timezone', 'Asia/Karachi')
+                "INSERT INTO settings (setting_key, setting_value) VALUES (%s, %s)",
+                ("owner_timezone", "Asia/Karachi"),
             )
             c.execute(
-                'INSERT INTO settings (setting_key, setting_value) VALUES (%s, %s)',
-                ('availability_mode', 'daily')
+                "INSERT INTO settings (setting_key, setting_value) VALUES (%s, %s)",
+                ("availability_mode", "daily"),
             )
-            
+
             # Insert default availability (daily mode - each day)
-            days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+            days = [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday",
+            ]
             for day in days:
-                c.execute('''
+                c.execute(
+                    """
                     INSERT INTO availability (setting_type, day_of_week, time_slots, is_active)
                     VALUES (%s, %s, %s, TRUE)
-                ''', ('daily', day, '["23:00", "00:00", "01:00"]'))
-        
+                """,
+                    ("daily", day, '["23:00", "00:00", "01:00"]'),
+                )
+
         conn.commit()
         c.close()
         conn.close()
@@ -223,73 +268,85 @@ def init_db():
         print(f"❌ Database initialization failed: {e}")
         return False
 
+
 def check_startup_config():
     """Check and display configuration status"""
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print("🚀 PORTFOLIO STARTUP CONFIGURATION")
-    print("="*50)
-    
+    print("=" * 50)
+
     # Check GROQ_API_KEY
-    groq_key = os.environ.get('GROQ_API_KEY', '')
+    groq_key = os.environ.get("GROQ_API_KEY", "")
     if groq_key:
         print(f"✅ GROQ_API_KEY: Configured")
     else:
         print(f"❌ GROQ_API_KEY: Not set (Chatbot will not work)")
-    
+
     # Check DATABASE_URL
     if is_valid_db:
         print(f"✅ DATABASE_URL: Valid format")
     else:
         print(f"❌ DATABASE_URL: {db_validation_msg}")
-    
+
     # Check database connection
     if DATABASE_AVAILABLE:
         print(f"✅ Database: Connected and ready")
     else:
         print(f"⚠️  Database: {DB_INIT_MESSAGE}")
-    
+
     # Check Telegram
-    telegram_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-    telegram_chat = os.environ.get('TELEGRAM_CHAT_ID', '')
+    telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    telegram_chat = os.environ.get("TELEGRAM_CHAT_ID", "")
     if telegram_token and telegram_chat:
         print(f"✅ TELEGRAM: Configured")
     else:
         print(f"⚠️  TELEGRAM: Not configured (Contact form notifications disabled)")
-    
-    print("="*50 + "\n")
+
+    print("=" * 50 + "\n")
+
 
 def clean_message(content):
     if not content:
         return ""
     import re
+
     content = str(content)
-    content = content.replace('\x00', '')
+    content = content.replace("\x00", "")
     # Remove image URLs to prevent AI from trying to process them
-    content = re.sub(r'https?://[^\s]+\.(png|jpg|jpeg|gif|webp|svg)', '[IMAGE]', content, flags=re.IGNORECASE)
-    content = re.sub(r'data:image/[^\s]+', '[IMAGE]', content)
+    content = re.sub(
+        r"https?://[^\s]+\.(png|jpg|jpeg|gif|webp|svg)",
+        "[IMAGE]",
+        content,
+        flags=re.IGNORECASE,
+    )
+    content = re.sub(r"data:image/[^\s]+", "[IMAGE]", content)
     return content[:2000]
+
 
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
-            return jsonify({'error': 'Not authenticated'}), 401
+        if not session.get("logged_in"):
+            return jsonify({"error": "Not authenticated"}), 401
         return f(*args, **kwargs)
+
     return decorated_function
+
 
 def check_rate_limit(ip):
     """Check if IP has exceeded rate limit. Returns (allowed, remaining_requests)"""
     now = datetime.now()
     window_start = now - timedelta(seconds=RATE_WINDOW)
-    
+
     # Clean old entries
     chat_requests[ip] = [t for t in chat_requests[ip] if t > window_start]
-    
+
     if len(chat_requests[ip]) >= RATE_LIMIT:
         return False, 0
-    
+
     chat_requests[ip].append(now)
     return True, RATE_LIMIT - len(chat_requests[ip])
+
 
 # Default available slots
 AVAILABLE_SLOTS = {
@@ -299,221 +356,310 @@ AVAILABLE_SLOTS = {
     "Thursday": ["23:00", "00:00", "01:00"],
     "Friday": ["23:00", "00:00", "01:00"],
     "Saturday": ["23:00", "00:00", "01:00"],
-    "Sunday": ["23:00", "00:00", "01:00"]
+    "Sunday": ["23:00", "00:00", "01:00"],
 }
+
 
 def get_owner_timezone():
     """Get the owner's timezone from settings"""
     try:
         conn = get_db()
         c = conn.cursor()
-        c.execute("SELECT setting_value FROM settings WHERE setting_key = 'owner_timezone'")
+        c.execute(
+            "SELECT setting_value FROM settings WHERE setting_key = 'owner_timezone'"
+        )
         result = c.fetchone()
         print(f"[TIMEZONE] Query result: {result}")
         c.close()
         conn.close()
-        tz = result[0] if result else 'Asia/Karachi'
+        tz = result[0] if result else "Asia/Karachi"
         print(f"[TIMEZONE] Returned: {tz}")
         return tz
     except Exception as e:
         print(f"[TIMEZONE] Error: {e}")
-        return 'Asia/Karachi'
+        return "Asia/Karachi"
+
 
 def get_availability_mode():
     """Get the availability mode (daily, weekly, monthly)"""
     try:
         conn = get_db()
         c = conn.cursor()
-        c.execute("SELECT setting_value FROM settings WHERE setting_key = 'availability_mode'")
+        c.execute(
+            "SELECT setting_value FROM settings WHERE setting_key = 'availability_mode'"
+        )
         result = c.fetchone()
         print(f"[MODE] Query result: {result}")
         c.close()
         conn.close()
-        mode = result[0] if result else 'daily'
+        mode = result[0] if result else "daily"
         print(f"[MODE] Returned mode: {mode}")
         return mode
     except Exception as e:
         print(f"[MODE] Error getting mode: {e}")
-        return 'daily'
+        return "daily"
+
 
 def get_available_slots(date_str):
     """Get available slots for a specific date, considering the availability mode"""
     print(f"[AVAILABILITY] Getting slots for: {date_str}")
     try:
-        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-        day_name = date_obj.strftime('%A')
-        date_iso = date_obj.strftime('%Y-%m-%d')
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+        day_name = date_obj.strftime("%A")
+        date_iso = date_obj.strftime("%Y-%m-%d")
         print(f"[AVAILABILITY] Day: {day_name}, ISO: {date_iso}")
-        
+
         conn = get_db()
         c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
+
         # Check availability mode
         mode = get_availability_mode()
         print(f"[AVAILABILITY] Mode from DB: '{mode}'")
-        
-        if mode == 'monthly':
+
+        if mode == "monthly":
             print("[AVAILABILITY] Checking monthly mode")
             # First try specific date
-            c.execute("SELECT time_slots FROM availability WHERE setting_type = 'monthly' AND specific_date = %s AND is_active = TRUE", (date_iso,))
+            c.execute(
+                "SELECT time_slots FROM availability WHERE setting_type = 'monthly' AND specific_date = %s AND is_active = TRUE",
+                (date_iso,),
+            )
             result = c.fetchone()
             print(f"[AVAILABILITY] Monthly result: {result}")
             if result:
                 c.close()
                 conn.close()
-                return json.loads(result['time_slots'])
+                return json.loads(result["time_slots"])
             return []
-        
-        if mode == 'weekly':
+
+        if mode == "weekly":
             print("[AVAILABILITY] Checking weekly mode")
             # Get the week's start date (Monday)
             week_start = date_obj - timedelta(days=date_obj.weekday())
-            week_start_iso = week_start.strftime('%Y-%m-%d')
-            
+            week_start_iso = week_start.strftime("%Y-%m-%d")
+
             # Try specific week first (stored with specific_date = week start)
-            c.execute("SELECT time_slots FROM availability WHERE setting_type = 'weekly' AND specific_date = %s AND is_active = TRUE", (week_start_iso,))
+            c.execute(
+                "SELECT time_slots FROM availability WHERE setting_type = 'weekly' AND specific_date = %s AND is_active = TRUE",
+                (week_start_iso,),
+            )
             result = c.fetchone()
             print(f"[AVAILABILITY] Weekly result (specific week): {result}")
             if result:
                 c.close()
                 conn.close()
-                return json.loads(result['time_slots'])
-            
+                return json.loads(result["time_slots"])
+
             # Fall back to generic weekly entry
-            c.execute("SELECT time_slots FROM availability WHERE setting_type = 'weekly' AND day_of_week IS NULL AND specific_date IS NULL AND is_active = TRUE LIMIT 1")
+            c.execute(
+                "SELECT time_slots FROM availability WHERE setting_type = 'weekly' AND day_of_week IS NULL AND specific_date IS NULL AND is_active = TRUE LIMIT 1"
+            )
             result = c.fetchone()
             print(f"[AVAILABILITY] Weekly result (generic): {result}")
             c.close()
             conn.close()
             if result:
-                return json.loads(result['time_slots'])
+                return json.loads(result["time_slots"])
             return []
-        
+
         # Daily mode - check specific date first, then fall back to day of week
         print(f"[AVAILABILITY] Checking daily mode for {date_iso}")
-        
+
         # Try specific date first
-        c.execute("SELECT time_slots FROM availability WHERE setting_type = 'daily' AND specific_date = %s AND is_active = TRUE", (date_iso,))
+        c.execute(
+            "SELECT time_slots FROM availability WHERE setting_type = 'daily' AND specific_date = %s AND is_active = TRUE",
+            (date_iso,),
+        )
         result = c.fetchone()
         print(f"[AVAILABILITY] Daily result (specific date): {result}")
-        
+
         if result:
             c.close()
             conn.close()
-            slots = json.loads(result['time_slots'])
+            slots = json.loads(result["time_slots"])
             print(f"[AVAILABILITY] Returning {len(slots)} slots from specific date")
             return slots
-        
+
         # Fall back to day of week
         print(f"[AVAILABILITY] Trying day of week: {day_name}")
-        c.execute("SELECT time_slots FROM availability WHERE setting_type = 'daily' AND day_of_week = %s AND is_active = TRUE", (day_name,))
+        c.execute(
+            "SELECT time_slots FROM availability WHERE setting_type = 'daily' AND day_of_week = %s AND is_active = TRUE",
+            (day_name,),
+        )
         result = c.fetchone()
         print(f"[AVAILABILITY] Daily result (day of week): {result}")
         c.close()
         conn.close()
-        
+
         if result:
-            slots = json.loads(result['time_slots'])
+            slots = json.loads(result["time_slots"])
             print(f"[AVAILABILITY] Returning {len(slots)} slots from day of week")
             return slots
-        
+
         print("[AVAILABILITY] No slots found, returning empty array")
         return []
     except Exception as e:
         print(f"[AVAILABILITY] Error getting slots: {e}")
         return AVAILABLE_SLOTS.get(day_name, [])
 
-def save_availability(setting_type, day_of_week=None, specific_date=None, time_slots=None, apply_to_all=False):
+
+def save_availability(
+    setting_type,
+    day_of_week=None,
+    specific_date=None,
+    time_slots=None,
+    apply_to_all=False,
+):
     """Save availability settings"""
     try:
         conn = get_db()
         c = conn.cursor()
-        
-        if setting_type == 'daily':
+
+        if setting_type == "daily":
             if apply_to_all:
                 # Apply same slots to all days of the week
-                days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                days = [
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday",
+                    "Sunday",
+                ]
                 for day in days:
-                    c.execute("SELECT id FROM availability WHERE setting_type = 'daily' AND day_of_week = %s", (day,))
+                    c.execute(
+                        "SELECT id FROM availability WHERE setting_type = 'daily' AND day_of_week = %s",
+                        (day,),
+                    )
                     if c.fetchone():
-                        c.execute('''
+                        c.execute(
+                            """
                             UPDATE availability SET time_slots = %s, updated_at = NOW()
                             WHERE setting_type = 'daily' AND day_of_week = %s
-                        ''', (json.dumps(time_slots), day))
+                        """,
+                            (json.dumps(time_slots), day),
+                        )
                     else:
-                        c.execute('''
+                        c.execute(
+                            """
                             INSERT INTO availability (setting_type, day_of_week, time_slots, is_active)
                             VALUES (%s, %s, %s, TRUE)
-                        ''', (setting_type, day, json.dumps(time_slots)))
+                        """,
+                            (setting_type, day, json.dumps(time_slots)),
+                        )
             elif specific_date:
                 # Save for specific date
-                c.execute("SELECT id FROM availability WHERE setting_type = 'daily' AND specific_date = %s", (specific_date,))
+                c.execute(
+                    "SELECT id FROM availability WHERE setting_type = 'daily' AND specific_date = %s",
+                    (specific_date,),
+                )
                 if c.fetchone():
-                    c.execute('''
+                    c.execute(
+                        """
                         UPDATE availability SET time_slots = %s, updated_at = NOW()
                         WHERE setting_type = 'daily' AND specific_date = %s
-                    ''', (json.dumps(time_slots), specific_date))
+                    """,
+                        (json.dumps(time_slots), specific_date),
+                    )
                 else:
-                    c.execute('''
+                    c.execute(
+                        """
                         INSERT INTO availability (setting_type, specific_date, time_slots, is_active, updated_at)
                         VALUES (%s, %s, %s, TRUE, NOW())
-                    ''', (setting_type, specific_date, json.dumps(time_slots)))
+                    """,
+                        (setting_type, specific_date, json.dumps(time_slots)),
+                    )
             elif day_of_week:
                 # Update or insert specific day
-                c.execute("SELECT id FROM availability WHERE setting_type = 'daily' AND day_of_week = %s", (day_of_week,))
+                c.execute(
+                    "SELECT id FROM availability WHERE setting_type = 'daily' AND day_of_week = %s",
+                    (day_of_week,),
+                )
                 if c.fetchone():
-                    c.execute('''
+                    c.execute(
+                        """
                         UPDATE availability SET time_slots = %s, updated_at = NOW()
                         WHERE setting_type = 'daily' AND day_of_week = %s
-                    ''', (json.dumps(time_slots), day_of_week))
+                    """,
+                        (json.dumps(time_slots), day_of_week),
+                    )
                 else:
-                    c.execute('''
+                    c.execute(
+                        """
                         INSERT INTO availability (setting_type, day_of_week, time_slots, is_active)
                         VALUES (%s, %s, %s, TRUE)
-                    ''', (setting_type, day_of_week, json.dumps(time_slots)))
-        
-        elif setting_type == 'weekly':
+                    """,
+                        (setting_type, day_of_week, json.dumps(time_slots)),
+                    )
+
+        elif setting_type == "weekly":
             if specific_date:
                 # Save for specific week (specific_date = week start date)
-                c.execute("SELECT id FROM availability WHERE setting_type = 'weekly' AND specific_date = %s", (specific_date,))
+                c.execute(
+                    "SELECT id FROM availability WHERE setting_type = 'weekly' AND specific_date = %s",
+                    (specific_date,),
+                )
                 if c.fetchone():
-                    c.execute('''
+                    c.execute(
+                        """
                         UPDATE availability SET time_slots = %s, updated_at = NOW()
                         WHERE setting_type = 'weekly' AND specific_date = %s
-                    ''', (json.dumps(time_slots), specific_date))
+                    """,
+                        (json.dumps(time_slots), specific_date),
+                    )
                 else:
-                    c.execute('''
+                    c.execute(
+                        """
                         INSERT INTO availability (setting_type, specific_date, time_slots, is_active, updated_at)
                         VALUES (%s, %s, %s, TRUE, NOW())
-                    ''', (setting_type, specific_date, json.dumps(time_slots)))
+                    """,
+                        (setting_type, specific_date, json.dumps(time_slots)),
+                    )
             else:
                 # Check if generic weekly entry exists
-                c.execute("SELECT id FROM availability WHERE setting_type = 'weekly' AND specific_date IS NULL AND day_of_week IS NULL LIMIT 1")
+                c.execute(
+                    "SELECT id FROM availability WHERE setting_type = 'weekly' AND specific_date IS NULL AND day_of_week IS NULL LIMIT 1"
+                )
                 if c.fetchone():
-                    c.execute('''
+                    c.execute(
+                        """
                         UPDATE availability SET time_slots = %s, updated_at = NOW()
                         WHERE setting_type = 'weekly' AND specific_date IS NULL
-                    ''', (json.dumps(time_slots),))
+                    """,
+                        (json.dumps(time_slots),),
+                    )
                 else:
-                    c.execute('''
+                    c.execute(
+                        """
                         INSERT INTO availability (setting_type, time_slots, updated_at)
                         VALUES (%s, %s, NOW())
-                    ''', (setting_type, json.dumps(time_slots)))
-        
-        elif setting_type == 'monthly':
+                    """,
+                        (setting_type, json.dumps(time_slots)),
+                    )
+
+        elif setting_type == "monthly":
             # Check if date entry exists
-            c.execute("SELECT id FROM availability WHERE setting_type = 'monthly' AND specific_date = %s", (specific_date,))
+            c.execute(
+                "SELECT id FROM availability WHERE setting_type = 'monthly' AND specific_date = %s",
+                (specific_date,),
+            )
             if c.fetchone():
-                c.execute('''
+                c.execute(
+                    """
                     UPDATE availability SET time_slots = %s, updated_at = NOW()
                     WHERE setting_type = 'monthly' AND specific_date = %s
-                ''', (json.dumps(time_slots), specific_date))
+                """,
+                    (json.dumps(time_slots), specific_date),
+                )
             else:
-                c.execute('''
+                c.execute(
+                    """
                     INSERT INTO availability (setting_type, specific_date, time_slots, updated_at)
                     VALUES (%s, %s, %s, NOW())
-                ''', (setting_type, specific_date, json.dumps(time_slots)))
-        
+                """,
+                    (setting_type, specific_date, json.dumps(time_slots)),
+                )
+
         conn.commit()
         c.close()
         conn.close()
@@ -521,6 +667,7 @@ def save_availability(setting_type, day_of_week=None, specific_date=None, time_s
     except Exception as e:
         print(f"Error saving availability: {e}")
         return False
+
 
 def get_all_availability():
     """Get all availability settings"""
@@ -535,16 +682,20 @@ def get_all_availability():
     except:
         return []
 
+
 def save_setting(setting_key, setting_value):
     """Save a setting"""
     try:
         conn = get_db()
         c = conn.cursor()
-        c.execute('''
+        c.execute(
+            """
             INSERT INTO settings (setting_key, setting_value, updated_at)
             VALUES (%s, %s, NOW())
             ON CONFLICT (setting_key) DO UPDATE SET setting_value = %s, updated_at = NOW()
-        ''', (setting_key, setting_value, setting_value))
+        """,
+            (setting_key, setting_value, setting_value),
+        )
         conn.commit()
         c.close()
         conn.close()
@@ -553,51 +704,63 @@ def save_setting(setting_key, setting_value):
         print(f"Error saving setting: {e}")
         return False
 
+
 def get_api_key():
-    api_key = os.environ.get('GROQ_API_KEY')
+    api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
-        raise Exception('GROQ_API_KEY not set in environment variables')
+        raise Exception("GROQ_API_KEY not set in environment variables")
     return api_key
+
 
 # Meeting functions using PostgreSQL
 def save_meeting(name, email, date, time, topic):
     now = datetime.now()
     conn = get_db()
     c = conn.cursor()
-    c.execute('INSERT INTO meetings (name, email, date, time, topic, status) VALUES (%s, %s, %s, %s, %s, %s)',
-              (name, email, date, time, topic, 'scheduled'))
+    c.execute(
+        "INSERT INTO meetings (name, email, date, time, topic, status) VALUES (%s, %s, %s, %s, %s, %s)",
+        (name, email, date, time, topic, "scheduled"),
+    )
     conn.commit()
     c.close()
     conn.close()
 
+
 def get_meetings():
     conn = get_db()
     c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    c.execute('SELECT name, email, date, time, topic, status FROM meetings ORDER BY id DESC')
+    c.execute(
+        "SELECT name, email, date, time, topic, status FROM meetings ORDER BY id DESC"
+    )
     rows = c.fetchall()
     c.close()
     conn.close()
     return [dict(row) for row in rows]
+
 
 # Contact functions using PostgreSQL
 def save_contact(name, email, message):
     now = datetime.now()
     conn = get_db()
     c = conn.cursor()
-    c.execute('INSERT INTO contacts (name, email, message, date, time) VALUES (%s, %s, %s, %s, %s)',
-              (name, email, message, now.strftime('%Y-%m-%d'), now.strftime('%H:%M:%S')))
+    c.execute(
+        "INSERT INTO contacts (name, email, message, date, time) VALUES (%s, %s, %s, %s, %s)",
+        (name, email, message, now.strftime("%Y-%m-%d"), now.strftime("%H:%M:%S")),
+    )
     conn.commit()
     c.close()
     conn.close()
 
+
 def get_contacts():
     conn = get_db()
     c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    c.execute('SELECT name, email, message, date, time FROM contacts ORDER BY id DESC')
+    c.execute("SELECT name, email, message, date, time FROM contacts ORDER BY id DESC")
     rows = c.fetchall()
     c.close()
     conn.close()
     return [dict(row) for row in rows]
+
 
 # JOGI System Prompt
 SYSTEM_PROMPT = """You are JOGI, Muhammad Ahmad's AI sales executive and tech consultant. You're not just an AI - you're Ahmad's best closer.
@@ -661,30 +824,42 @@ So - what brings you here today? Looking for a dev team? Got a wild tech idea? J
 
 - JOGI ✨"""
 
+
 # Booking API Routes
-@app.route('/api/slots', methods=['GET'])
+@app.route("/api/slots", methods=["GET"])
 def get_slots():
     print(f"[SLOTS] Request received, DATABASE_AVAILABLE={DATABASE_AVAILABLE}")
-    
+
     if not DATABASE_AVAILABLE:
         print("[SLOTS] Database not available")
-        return jsonify({'error': 'Database not available', 'available': [], 'booked': [], 'owner_timezone': 'Asia/Karachi'}), 200
-    
-    date = request.args.get('date')
+        return jsonify(
+            {
+                "error": "Database not available",
+                "available": [],
+                "booked": [],
+                "owner_timezone": "Asia/Karachi",
+            }
+        ), 200
+
+    date = request.args.get("date")
     if not date:
         print("[SLOTS] No date provided")
-        return jsonify({'error': 'Date required'}), 400
-    
+        return jsonify({"error": "Date required"}), 400
+
     print(f"[SLOTS] Getting slots for date: {date}")
-    
+
     booked = []
     try:
         meetings = get_meetings()
-        booked = [m['time'] for m in meetings if m['date'] == date and m['status'] == 'scheduled']
+        booked = [
+            m["time"]
+            for m in meetings
+            if m["date"] == date and m["status"] == "scheduled"
+        ]
         print(f"[SLOTS] Booked slots: {booked}")
     except Exception as e:
         print(f"[SLOTS] Error getting booked slots: {e}")
-    
+
     try:
         available = get_available_slots(date)
         print(f"[SLOTS] Available slots from DB: {available}")
@@ -693,83 +868,98 @@ def get_slots():
     except Exception as e:
         print(f"[SLOTS] Error getting available slots: {e}")
         available = []
-    
+
     try:
         owner_tz = get_owner_timezone()
         print(f"[SLOTS] Owner timezone: {owner_tz}")
     except Exception as e:
         print(f"[SLOTS] Error getting timezone: {e}")
-        owner_tz = 'Asia/Karachi'
-    
-    return jsonify({
-        'date': date, 
-        'available': available, 
-        'booked': booked,
-        'owner_timezone': owner_tz
-    })
+        owner_tz = "Asia/Karachi"
 
-@app.route('/api/health')
+    return jsonify(
+        {
+            "date": date,
+            "available": available,
+            "booked": booked,
+            "owner_timezone": owner_tz,
+        }
+    )
+
+
+@app.route("/api/health")
 def health_check():
     """Health check endpoint to verify database and API status"""
-    return jsonify({
-        'status': 'ok',
-        'database': {
-            'configured': is_valid_db,
-            'available': DATABASE_AVAILABLE,
-            'message': DB_INIT_MESSAGE
-        },
-        'api': {
-            'chatbot': bool(os.environ.get('GROQ_API_KEY', '')),
-            'telegram': bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID)
+    return jsonify(
+        {
+            "status": "ok",
+            "database": {
+                "configured": is_valid_db,
+                "available": DATABASE_AVAILABLE,
+                "message": DB_INIT_MESSAGE,
+            },
+            "api": {
+                "chatbot": bool(os.environ.get("GROQ_API_KEY", "")),
+                "telegram": bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID),
+            },
         }
-    })
+    )
 
-@app.route('/api/availability')
+
+@app.route("/api/availability")
 def get_availability():
     """Get availability for a specific mode and date"""
     if not DATABASE_AVAILABLE:
-        return jsonify({'slots': []})
-    
-    mode = request.args.get('mode', 'daily')
-    date = request.args.get('date')
-    
+        return jsonify({"slots": []})
+
+    mode = request.args.get("mode", "daily")
+    date = request.args.get("date")
+
     if not date:
-        return jsonify({'slots': []})
-    
+        return jsonify({"slots": []})
+
     try:
         conn = get_db()
         c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
-        if mode == 'daily':
+
+        if mode == "daily":
             # Try specific date first, then day of week
-            c.execute("""
+            c.execute(
+                """
                 SELECT time_slots FROM availability 
                 WHERE setting_type = 'daily' AND specific_date = %s AND is_active = TRUE
-            """, (date,))
+            """,
+                (date,),
+            )
             result = c.fetchone()
-            
+
             if not result:
                 # Fall back to day of week
-                day_name = datetime.strptime(date, '%Y-%m-%d').strftime('%A')
-                c.execute("""
+                day_name = datetime.strptime(date, "%Y-%m-%d").strftime("%A")
+                c.execute(
+                    """
                     SELECT time_slots FROM availability 
                     WHERE setting_type = 'daily' AND day_of_week = %s AND is_active = TRUE
-                """, (day_name,))
+                """,
+                    (day_name,),
+                )
                 result = c.fetchone()
-        
-        elif mode == 'weekly':
+
+        elif mode == "weekly":
             # Get week start (Monday)
-            date_obj = datetime.strptime(date, '%Y-%m-%d')
+            date_obj = datetime.strptime(date, "%Y-%m-%d")
             week_start = date_obj - timedelta(days=date_obj.weekday())
-            week_start_str = week_start.strftime('%Y-%m-%d')
-            
+            week_start_str = week_start.strftime("%Y-%m-%d")
+
             # Try specific week first
-            c.execute("""
+            c.execute(
+                """
                 SELECT time_slots FROM availability 
                 WHERE setting_type = 'weekly' AND specific_date = %s AND is_active = TRUE
-            """, (week_start_str,))
+            """,
+                (week_start_str,),
+            )
             result = c.fetchone()
-            
+
             if not result:
                 # Fall back to generic weekly
                 c.execute("""
@@ -777,97 +967,105 @@ def get_availability():
                     WHERE setting_type = 'weekly' AND specific_date IS NULL AND is_active = TRUE LIMIT 1
                 """)
                 result = c.fetchone()
-        
-        elif mode == 'monthly':
-            c.execute("""
+
+        elif mode == "monthly":
+            c.execute(
+                """
                 SELECT time_slots FROM availability 
                 WHERE setting_type = 'monthly' AND specific_date = %s AND is_active = TRUE
-            """, (date,))
+            """,
+                (date,),
+            )
             result = c.fetchone()
-        
+
         c.close()
         conn.close()
-        
+
         if result:
-            return jsonify({'slots': json.loads(result['time_slots'])})
-        
-        return jsonify({'slots': []})
+            return jsonify({"slots": json.loads(result["time_slots"])})
+
+        return jsonify({"slots": []})
     except Exception as e:
         print(f"[AVAILABILITY API] Error: {e}")
-        return jsonify({'slots': []})
+        return jsonify({"slots": []})
 
-@app.route('/api/debug/availability')
+
+@app.route("/api/debug/availability")
 def debug_availability():
     """Debug endpoint to see what's stored in availability table"""
     if not DATABASE_AVAILABLE:
-        return jsonify({'error': 'Database not available'})
-    
+        return jsonify({"error": "Database not available"})
+
     try:
         conn = get_db()
         c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
+
         # Get all availability data
-        c.execute("SELECT setting_type, day_of_week, specific_date, time_slots, is_active FROM availability ORDER BY setting_type, day_of_week, specific_date")
+        c.execute(
+            "SELECT setting_type, day_of_week, specific_date, time_slots, is_active FROM availability ORDER BY setting_type, day_of_week, specific_date"
+        )
         rows = c.fetchall()
-        
+
         # Get current mode
-        c.execute("SELECT setting_value FROM settings WHERE setting_key = 'availability_mode'")
+        c.execute(
+            "SELECT setting_value FROM settings WHERE setting_key = 'availability_mode'"
+        )
         mode_row = c.fetchone()
-        current_mode = mode_row[0] if mode_row else 'daily'
-        
+        current_mode = mode_row[0] if mode_row else "daily"
+
         c.close()
         conn.close()
-        
-        return jsonify({
-            'current_mode': current_mode,
-            'availability': [dict(row) for row in rows]
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)})
 
-@app.route('/api/availability/markers')
+        return jsonify(
+            {"current_mode": current_mode, "availability": [dict(row) for row in rows]}
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+@app.route("/api/availability/markers")
 def get_availability_markers():
     """Get availability markers for a month (for calendar visual indicators)"""
     if not DATABASE_AVAILABLE:
-        return jsonify({'markers': {}})
-    
-    year = request.args.get('year', type=int)
-    month = request.args.get('month', type=int)
-    mode = request.args.get('mode', 'daily')
-    
+        return jsonify({"markers": {}})
+
+    year = request.args.get("year", type=int)
+    month = request.args.get("month", type=int)
+    mode = request.args.get("mode", "daily")
+
     if not year or not month:
-        return jsonify({'markers': {}})
-    
+        return jsonify({"markers": {}})
+
     try:
         conn = get_db()
         c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
+
         markers = {}
-        
-        if mode == 'daily':
+
+        if mode == "daily":
             # Get specific dates that have custom availability
             start_date = f"{year}-{month:02d}-01"
             if month == 12:
-                end_date = f"{year+1}-01-01"
+                end_date = f"{year + 1}-01-01"
             else:
-                end_date = f"{year}-{month+1:02d}-01"
-            
-            c.execute("""
+                end_date = f"{year}-{month + 1:02d}-01"
+
+            c.execute(
+                """
                 SELECT specific_date, time_slots FROM availability 
                 WHERE setting_type = 'daily' 
                 AND specific_date >= %s 
                 AND specific_date < %s
                 AND is_active = TRUE
-            """, (start_date, end_date))
-            
+            """,
+                (start_date, end_date),
+            )
+
             for row in c.fetchall():
-                date_str = str(row['specific_date'])
-                slots = json.loads(row['time_slots'])
-                markers[date_str] = {
-                    'count': len(slots),
-                    'slots': slots
-                }
-            
+                date_str = str(row["specific_date"])
+                slots = json.loads(row["time_slots"])
+                markers[date_str] = {"count": len(slots), "slots": slots}
+
             # Also get day-of-week availability
             c.execute("""
                 SELECT day_of_week, time_slots FROM availability 
@@ -877,9 +1075,9 @@ def get_availability_markers():
             """)
             day_slots = {}
             for row in c.fetchall():
-                day_slots[row['day_of_week']] = len(json.loads(row['time_slots']))
-        
-        elif mode == 'weekly':
+                day_slots[row["day_of_week"]] = len(json.loads(row["time_slots"]))
+
+        elif mode == "weekly":
             # Get week-specific availability
             c.execute("""
                 SELECT specific_date, time_slots FROM availability 
@@ -888,53 +1086,53 @@ def get_availability_markers():
                 AND is_active = TRUE
             """)
             for row in c.fetchall():
-                if row['specific_date']:
-                    date_str = str(row['specific_date'])
-                    slots = json.loads(row['time_slots'])
-                    markers[date_str] = {
-                        'count': len(slots),
-                        'slots': slots
-                    }
-        
-        elif mode == 'monthly':
+                if row["specific_date"]:
+                    date_str = str(row["specific_date"])
+                    slots = json.loads(row["time_slots"])
+                    markers[date_str] = {"count": len(slots), "slots": slots}
+
+        elif mode == "monthly":
             # Get month-specific availability
             start_date = f"{year}-{month:02d}-01"
             if month == 12:
-                end_date = f"{year+1}-01-01"
+                end_date = f"{year + 1}-01-01"
             else:
-                end_date = f"{year}-{month+1:02d}-01"
-            
-            c.execute("""
+                end_date = f"{year}-{month + 1:02d}-01"
+
+            c.execute(
+                """
                 SELECT specific_date, time_slots FROM availability 
                 WHERE setting_type = 'monthly' 
                 AND specific_date >= %s 
                 AND specific_date < %s
                 AND is_active = TRUE
-            """, (start_date, end_date))
-            
+            """,
+                (start_date, end_date),
+            )
+
             for row in c.fetchall():
-                date_str = str(row['specific_date'])
-                slots = json.loads(row['time_slots'])
-                markers[date_str] = {
-                    'count': len(slots),
-                    'slots': slots
-                }
-        
+                date_str = str(row["specific_date"])
+                slots = json.loads(row["time_slots"])
+                markers[date_str] = {"count": len(slots), "slots": slots}
+
         c.close()
         conn.close()
-        
-        return jsonify({'markers': markers, 'day_slots': day_slots if mode == 'daily' else {}})
+
+        return jsonify(
+            {"markers": markers, "day_slots": day_slots if mode == "daily" else {}}
+        )
     except Exception as e:
         print(f"[MARKERS] Error: {e}")
-        return jsonify({'markers': {}, 'day_slots': {}})
+        return jsonify({"markers": {}, "day_slots": {}})
 
-@app.route('/api/settings', methods=['GET', 'POST'])
+
+@app.route("/api/settings", methods=["GET", "POST"])
 def api_settings():
     """Get or save settings"""
     if not DATABASE_AVAILABLE:
-        return jsonify({'error': 'Database not available'}), 503
-    
-    if request.method == 'GET':
+        return jsonify({"error": "Database not available"}), 503
+
+    if request.method == "GET":
         try:
             conn = get_db()
             c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -942,203 +1140,219 @@ def api_settings():
             rows = c.fetchall()
             c.close()
             conn.close()
-            settings = {row['setting_key']: row['setting_value'] for row in rows}
-            
+            settings = {row["setting_key"]: row["setting_value"] for row in rows}
+
             # Also get availability
             availability = get_all_availability()
-            
-            return jsonify({
-                'settings': settings,
-                'availability': availability
-            })
+
+            return jsonify({"settings": settings, "availability": availability})
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
-    
+            return jsonify({"error": str(e)}), 500
+
     # POST - Save settings
     try:
         data = request.get_json()
-        
-        if 'owner_timezone' in data:
-            save_setting('owner_timezone', data['owner_timezone'])
-        
-        if 'availability_mode' in data:
-            save_setting('availability_mode', data['availability_mode'])
-        
-        if 'availability' in data:
-            for av in data['availability']:
-                save_availability(
-                    setting_type=av.get('setting_type', 'daily'),
-                    day_of_week=av.get('day_of_week'),
-                    specific_date=av.get('specific_date'),
-                    time_slots=av.get('time_slots', []),
-                    apply_to_all=av.get('apply_to_all', False)
-                )
-        
-        return jsonify({'success': True})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
-@app.route('/api/book', methods=['POST'])
+        if "owner_timezone" in data:
+            save_setting("owner_timezone", data["owner_timezone"])
+
+        if "availability_mode" in data:
+            save_setting("availability_mode", data["availability_mode"])
+
+        if "availability" in data:
+            for av in data["availability"]:
+                save_availability(
+                    setting_type=av.get("setting_type", "daily"),
+                    day_of_week=av.get("day_of_week"),
+                    specific_date=av.get("specific_date"),
+                    time_slots=av.get("time_slots", []),
+                    apply_to_all=av.get("apply_to_all", False),
+                )
+
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/book", methods=["POST"])
 def book_meeting():
     if not DATABASE_AVAILABLE:
-        return jsonify({'success': False, 'error': 'Booking system temporarily unavailable. Database not connected.'}), 503
-    
+        return jsonify(
+            {
+                "success": False,
+                "error": "Booking system temporarily unavailable. Database not connected.",
+            }
+        ), 503
+
     try:
         data = request.get_json()
-        name = data.get('name', '').strip()
-        email = data.get('email', '').strip()
-        date = data.get('date', '').strip()
-        time = data.get('time', '').strip()
-        topic = data.get('topic', '').strip()
-        
+        name = data.get("name", "").strip()
+        email = data.get("email", "").strip()
+        date = data.get("date", "").strip()
+        time = data.get("time", "").strip()
+        topic = data.get("topic", "").strip()
+
         if not all([name, email, date, time]):
-            return jsonify({'success': False, 'error': 'All fields required'}), 400
-        
+            return jsonify({"success": False, "error": "All fields required"}), 400
+
         # Check if slot is already booked
         meetings = get_meetings()
         for m in meetings:
-            if m['date'] == date and m['time'] == time and m['status'] == 'scheduled':
-                return jsonify({'success': False, 'error': 'Slot already booked'}), 400
-        
-        save_meeting(name, email, date, time, topic or 'General Discussion')
-        
+            if m["date"] == date and m["time"] == time and m["status"] == "scheduled":
+                return jsonify({"success": False, "error": "Slot already booked"}), 400
+
+        save_meeting(name, email, date, time, topic or "General Discussion")
+
         # Send Telegram notification
         telegram_msg = f"📅 <b>New Meeting Booked!</b>\n\n👤 <b>Name:</b> {name}\n📧 <b>Email:</b> {email}\n📆 <b>Date:</b> {date}\n⏰ <b>Time:</b> {time}\n💼 <b>Topic:</b> {topic or 'General Discussion'}"
         send_telegram_message(telegram_msg)
-        
-        return jsonify({'success': True})
-    except Exception as e:
-        print(f'Booking error: {e}')
-        return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/meetings')
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"Booking error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/meetings")
 def api_meetings():
     if not DATABASE_AVAILABLE:
         return jsonify([]), 200
-    
+
     meetings = get_meetings()
     response = jsonify(meetings)
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
     return response
 
-@app.route('/api/chat', methods=['POST'])
+
+@app.route("/api/chat", methods=["POST"])
 def chat():
-    if request.method != 'POST':
-        return jsonify({'error': 'Method not allowed'}), 405
-    
+    if request.method != "POST":
+        return jsonify({"error": "Method not allowed"}), 405
+
     # Rate limiting
-    client_ip = request.remote_addr or 'unknown'
+    client_ip = request.remote_addr or "unknown"
     allowed, remaining = check_rate_limit(client_ip)
     if not allowed:
-        return jsonify({'error': 'Too many requests. Please wait a moment and try again.'}), 429
-    
+        return jsonify(
+            {"error": "Too many requests. Please wait a moment and try again."}
+        ), 429
+
     try:
         data = request.get_json()
     except:
-        return jsonify({'error': 'Invalid JSON'}), 400
-    
+        return jsonify({"error": "Invalid JSON"}), 400
+
     if not data:
-        return jsonify({'error': 'Empty request'}), 400
-    
-    messages = data.get('messages', [])
-    
+        return jsonify({"error": "Empty request"}), 400
+
+    messages = data.get("messages", [])
+
     if not messages or not isinstance(messages, list):
-        return jsonify({'error': 'Invalid request'}), 400
-    
+        return jsonify({"error": "Invalid request"}), 400
+
     try:
         api_key = get_api_key()
         cleaned_messages = []
         for msg in messages[-6:]:
-            role = msg.get('role', 'user')
-            content = clean_message(msg.get('content', ''))
+            role = msg.get("role", "user")
+            content = clean_message(msg.get("content", ""))
             if content:
-                cleaned_messages.append({'role': role, 'content': content})
-        
+                cleaned_messages.append({"role": role, "content": content})
+
         formatted_messages = [
-            {'role': 'system', 'content': SYSTEM_PROMPT},
-            *cleaned_messages
+            {"role": "system", "content": SYSTEM_PROMPT},
+            *cleaned_messages,
         ]
-        
+
         response = requests.post(
-            'https://api.groq.com/openai/v1/chat/completions',
+            "https://api.groq.com/openai/v1/chat/completions",
             headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json'
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
             },
             json={
-                'model': 'llama-3.1-8b-instant',
-                'messages': formatted_messages,
-                'temperature': 0.7,
-                'max_tokens': 350
+                "model": "llama-3.1-8b-instant",
+                "messages": formatted_messages,
+                "temperature": 0.7,
+                "max_tokens": 350,
             },
-            timeout=30
+            timeout=30,
         )
-        
-        print(f"Groq API response: {response.status_code}")
-        
-        if response.status_code != 200:
-            print(f'Groq API error: {response.status_code} - {response.text}')
-            return jsonify({'error': f'AI service error: {response.text[:100]}'}), 500
-        
-        result = response.json()
-        
-        if 'choices' not in result or not result['choices']:
-            return jsonify({'error': 'Invalid AI response'}), 500
-        
-        assistant_message = result['choices'][0]['message']['content']
-        
-        if not assistant_message:
-            return jsonify({'error': 'Empty AI response'}), 500
-        
-        return jsonify({
-            'message': assistant_message
-        })
-        
-    except requests.exceptions.Timeout:
-        print('Request timeout')
-        return jsonify({'error': 'Request timed out. Please try again.'}), 500
-    except Exception as e:
-        print(f'Chat error: {e}')
-        return jsonify({'error': 'Failed to process request'}), 500
 
-@app.route('/api/contact', methods=['POST'])
+        print(f"Groq API response: {response.status_code}")
+
+        if response.status_code != 200:
+            print(f"Groq API error: {response.status_code} - {response.text}")
+            return jsonify({"error": f"AI service error: {response.text[:100]}"}), 500
+
+        result = response.json()
+
+        if "choices" not in result or not result["choices"]:
+            return jsonify({"error": "Invalid AI response"}), 500
+
+        assistant_message = result["choices"][0]["message"]["content"]
+
+        if not assistant_message:
+            return jsonify({"error": "Empty AI response"}), 500
+
+        return jsonify({"message": assistant_message})
+
+    except requests.exceptions.Timeout:
+        print("Request timeout")
+        return jsonify({"error": "Request timed out. Please try again."}), 500
+    except Exception as e:
+        print(f"Chat error: {e}")
+        return jsonify({"error": "Failed to process request"}), 500
+
+
+@app.route("/api/contact", methods=["POST"])
 def contact():
     if not DATABASE_AVAILABLE:
-        return jsonify({'success': False, 'error': 'Contact form temporarily unavailable. Database not connected.'}), 503
-    
+        return jsonify(
+            {
+                "success": False,
+                "error": "Contact form temporarily unavailable. Database not connected.",
+            }
+        ), 503
+
     try:
         data = request.get_json()
-        name = data.get('name', '').strip()
-        email = data.get('email', '').strip()
-        message = data.get('message', '').strip()
-        
+        name = data.get("name", "").strip()
+        email = data.get("email", "").strip()
+        message = data.get("message", "").strip()
+
         # Validation
         if not name or not email or not message:
-            return jsonify({'success': False, 'error': 'All fields are required'}), 400
-        
+            return jsonify({"success": False, "error": "All fields are required"}), 400
+
         if len(name) > 100:
-            return jsonify({'success': False, 'error': 'Name must be under 100 characters'}), 400
-        
+            return jsonify(
+                {"success": False, "error": "Name must be under 100 characters"}
+            ), 400
+
         if len(message) > 2000:
-            return jsonify({'success': False, 'error': 'Message must be under 2000 characters'}), 400
-        
-        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            return jsonify(
+                {"success": False, "error": "Message must be under 2000 characters"}
+            ), 400
+
+        email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if not re.match(email_regex, email):
-            return jsonify({'success': False, 'error': 'Invalid email format'}), 400
-        
+            return jsonify({"success": False, "error": "Invalid email format"}), 400
+
         save_contact(name, email, message)
-        
+
         # Send Telegram notification
         telegram_msg = f"📬 <b>New Contact Message</b>\n\n👤 <b>Name:</b> {name}\n📧 <b>Email:</b> {email}\n💬 <b>Message:</b>\n{message}"
         send_telegram_message(telegram_msg)
-        
-        return jsonify({'success': True})
-    except Exception as e:
-        print(f'Contact error: {e}')
-        return jsonify({'success': False, 'error': 'Failed to save message'}), 500
 
-ADMIN_HTML = '''
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"Contact error: {e}")
+        return jsonify({"success": False, "error": "Failed to save message"}), 500
+
+
+ADMIN_HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2413,126 +2627,341 @@ ADMIN_HTML = '''
     </script>
 </body>
 </html>
-'''
+"""
 
-@app.route('/ahmadAdmin')
+
+@app.route("/ahmadAdmin")
 def admin():
     response = make_response(render_template_string(ADMIN_HTML))
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
     return response
 
-@app.route('/api/admin/login', methods=['POST'])
+
+@app.route("/api/admin/login", methods=["POST"])
 def admin_login():
     print("Login attempt received")
     try:
         data = request.get_json()
-        username = data.get('username')
-        password = data.get('password')
-        
+        username = data.get("username")
+        password = data.get("password")
+
         if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-            session['logged_in'] = True
+            session["logged_in"] = True
             print("Login successful!")
-            return jsonify({'success': True})
+            return jsonify({"success": True})
         print("Login failed - invalid credentials")
-        return jsonify({'success': False}), 401
+        return jsonify({"success": False}), 401
     except Exception as e:
         print(f"Login error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route('/api/admin/contacts')
+
+@app.route("/api/admin/contacts")
 @login_required
 def admin_contacts():
     if not DATABASE_AVAILABLE:
-        return jsonify({'error': 'Database not available'}), 503
+        return jsonify({"error": "Database not available"}), 503
     try:
         print(f"Loading contacts, session: {session.get('logged_in')}")
         contacts = get_contacts()
         print(f"Found {len(contacts)} contacts")
         response = jsonify(contacts)
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-        response.headers['Pragma'] = 'no-cache'
+        response.headers["Cache-Control"] = (
+            "no-store, no-cache, must-revalidate, max-age=0"
+        )
+        response.headers["Pragma"] = "no-cache"
         return response
     except Exception as e:
         print(f"Admin contacts error: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/admin/meetings')
+
+@app.route("/api/admin/meetings")
 @login_required
 def admin_meetings():
     if not DATABASE_AVAILABLE:
-        return jsonify({'error': 'Database not available'}), 503
+        return jsonify({"error": "Database not available"}), 503
     try:
         print(f"Loading meetings, session: {session.get('logged_in')}")
         meetings = get_meetings()
         print(f"Found {len(meetings)} meetings")
         response = jsonify(meetings)
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-        response.headers['Pragma'] = 'no-cache'
+        response.headers["Cache-Control"] = (
+            "no-store, no-cache, must-revalidate, max-age=0"
+        )
+        response.headers["Pragma"] = "no-cache"
         return response
     except Exception as e:
         print(f"Admin meetings error: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/admin/logout')
+
+@app.route("/api/admin/logout")
 def admin_logout():
-    session.pop('logged_in', None)
-    return jsonify({'success': True})
+    session.pop("logged_in", None)
+    return jsonify({"success": True})
 
-@app.route('/')
+
+@app.route("/")
 def index():
-    return send_from_directory('.', 'index.html')
+    return send_from_directory(".", "index.html")
 
-@app.route('/chatbot')
+
+@app.route("/chatbot")
 def chatbot():
-    return send_from_directory('.', 'chatbot.html')
+    return send_from_directory(".", "chatbot.html")
 
-@app.route('/book')
+
+@app.route("/book")
 def booking():
-    return send_from_directory('.', 'book.html')
+    return send_from_directory(".", "book.html")
 
-@app.route('/JogiWorld')
+
+@app.route("/JogiWorld")
 def jogiworld():
-    return send_from_directory('.', 'jogiworld.html')
+    return send_from_directory(".", "jogiworld.html")
 
-@app.route('/favicon.ico')
+
+@app.route("/ahmadAI")
+def ahmadai():
+    return send_from_directory(".", "ahmadAI.html")
+
+
+@app.route("/favicon.ico")
 def favicon():
-    return '', 204
+    return "", 204
 
-@app.route('/<path:filename>')
+
+@app.route("/<path:filename>")
 def serve_static(filename):
-    if filename.endswith('.mp3'):
-        return send_from_directory('.', filename, mimetype='audio/mpeg')
-    return send_from_directory('.', filename)
+    if filename.endswith(".mp3"):
+        return send_from_directory(".", filename, mimetype="audio/mpeg")
+    return send_from_directory(".", filename)
+
 
 # ==========================================
 # STARTUP INITIALIZATION (Works with gunicorn)
 # ==========================================
 
+
 def initialize_app():
     """Initialize app - runs both with python app.py AND gunicorn"""
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print("🚀 INITIALIZING PORTFOLIO")
-    print("="*50)
-    
+    print("=" * 50)
+
     # Verify database connection
     verify_db_connection()
-    
+
     # Initialize database tables if connected
     if DATABASE_AVAILABLE:
         init_db()
-    
+
     # Show config status
     check_startup_config()
-    
-    print("="*50 + "\n")
+
+    print("=" * 50 + "\n")
+
 
 # Run initialization at module load (works with gunicorn)
 initialize_app()
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    host = '0.0.0.0'
-    print(f'\n✅ Flask server starting on {host}:{port}')
-    print(f'📋 Admin panel: http://localhost:{port}/ahmadAdmin')
+# ==========================================
+# AHMADAI NEWS SYSTEM
+# ==========================================
+
+NEWS_DB_PATH = os.environ.get("NEWS_DB_PATH", "portfolio.db")
+
+
+def get_news_db():
+    import sqlite3
+
+    conn = sqlite3.connect(NEWS_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_news_db():
+    import sqlite3
+
+    conn = sqlite3.connect(NEWS_DB_PATH)
+    c = conn.cursor()
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS news_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            summary TEXT,
+            source TEXT,
+            source_type TEXT,
+            url TEXT UNIQUE,
+            thumbnail TEXT,
+            category TEXT DEFAULT 'News',
+            trending_score INTEGER DEFAULT 0,
+            published_at TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_processed BOOLEAN DEFAULT FALSE
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS news_metadata (
+            key TEXT PRIMARY KEY,
+            value TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+
+@app.route("/api/news")
+def get_news():
+    try:
+        conn = get_news_db()
+        c = conn.cursor()
+
+        category = request.args.get("category", "all")
+        source_type = request.args.get("source", "all")
+        limit = int(request.args.get("limit", 50))
+
+        query = "SELECT * FROM news_cache WHERE is_processed = TRUE"
+        params = []
+
+        if category and category != "all":
+            query += " AND category = ?"
+            params.append(category)
+
+        if source_type and source_type != "all":
+            query += " AND source_type = ?"
+            params.append(source_type)
+
+        query += " ORDER BY trending_score DESC, created_at DESC LIMIT ?"
+        params.append(limit)
+
+        c.execute(query, params)
+        rows = c.fetchall()
+        conn.close()
+
+        news = []
+        for row in rows:
+            news.append(
+                {
+                    "id": row["id"],
+                    "title": row["title"],
+                    "summary": row["summary"] or "",
+                    "source": row["source"] or "Unknown",
+                    "source_type": row["source_type"] or "blog",
+                    "url": row["url"] or "",
+                    "thumbnail": row["thumbnail"] or "",
+                    "category": row["category"] or "News",
+                    "trending_score": row["trending_score"] or 0,
+                    "published_at": row["published_at"] or "",
+                }
+            )
+
+        last_update = None
+        try:
+            conn2 = get_news_db()
+            c2 = conn2.cursor()
+            c2.execute("SELECT value FROM news_metadata WHERE key = 'last_update'")
+            row = c2.fetchone()
+            if row:
+                last_update = row["value"]
+            conn2.close()
+        except:
+            pass
+
+        return jsonify({"news": news, "last_update": last_update, "count": len(news)})
+    except Exception as e:
+        print(f"News API error: {e}")
+        return jsonify({"news": [], "error": str(e)})
+
+
+@app.route("/api/news/refresh", methods=["POST"])
+def refresh_news():
+    try:
+        import threading
+        import sys
+
+        def run_crew():
+            try:
+                sys.path.insert(0, ".")
+                from news_crew import run_full_crew
+
+                run_full_crew()
+            except Exception as e:
+                print(f"Crew execution error: {e}")
+
+        thread = threading.Thread(target=run_crew)
+        thread.start()
+
+        return jsonify({"success": True, "message": "News refresh started"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/news/status")
+def news_status():
+    try:
+        conn = get_news_db()
+        c = conn.cursor()
+        c.execute("SELECT value FROM news_metadata WHERE key = 'last_update'")
+        row = c.fetchone()
+        last_update = row["value"] if row else None
+
+        c.execute("SELECT COUNT(*) FROM news_cache WHERE is_processed = TRUE")
+        count = c.fetchone()[0]
+        conn.close()
+
+        return jsonify({"last_update": last_update, "cached_count": count})
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+def scheduled_news_update():
+    print("\n" + "=" * 50)
+    print("⏰ Scheduled News Update")
+    print("=" * 50)
+    try:
+        import sys
+
+        sys.path.insert(0, ".")
+        from news_crew import run_full_crew
+
+        run_full_crew()
+        print("=" * 50)
+    except Exception as e:
+        print(f"Scheduled update error: {e}")
+        print("=" * 50)
+
+
+scheduler = BackgroundScheduler()
+
+
+def start_scheduler():
+    init_news_db()
+
+    try:
+        scheduler.add_job(
+            scheduled_news_update,
+            "interval",
+            hours=8,
+            id="news_update",
+            replace_existing=True,
+        )
+        scheduler.start()
+        print("✅ News scheduler started (every 8 hours)")
+    except Exception as e:
+        print(f"Scheduler error: {e}")
+
+
+if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or __name__ == "__main__":
+    start_scheduler()
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    host = "0.0.0.0"
+    print(f"\n✅ Flask server starting on {host}:{port}")
+    print(f"📋 Admin panel: http://localhost:{port}/ahmadAdmin")
+    print(f"📰 ahmadAI News: http://localhost:{port}/ahmadAI")
     app.run(host=host, port=port, debug=False)
