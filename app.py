@@ -2732,7 +2732,7 @@ def ahmadai():
 # AHMADAI NEWS API (must be before catch-all)
 # ==========================================
 
-NEWS_DB_PATH = os.environ.get("NEWS_DB_PATH", "portfolio.db")
+NEWS_DB_PATH = os.environ.get("NEWS_DB_PATH", "news.db")
 
 
 def get_news_db():
@@ -2778,6 +2778,7 @@ def init_news_db():
 @app.route("/api/news")
 def get_news():
     try:
+        init_news_db()
         conn = get_news_db()
         c = conn.cursor()
 

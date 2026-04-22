@@ -7,8 +7,8 @@ import feedparser
 
 
 class NewsDB:
-    def __init__(self, db_path="portfolio.db"):
-        self.db_path = db_path
+    def __init__(self, db_path=None):
+        self.db_path = db_path or os.environ.get("NEWS_DB_PATH", "portfolio.db")
         self.init_db()
 
     def init_db(self):
@@ -89,7 +89,7 @@ class NewsDB:
         conn.close()
 
 
-db = NewsDB()
+db = NewsDB("news.db")
 
 
 def get_tech_giant_blogs():
