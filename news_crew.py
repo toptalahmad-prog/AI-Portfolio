@@ -5,91 +5,202 @@ from datetime import datetime, timedelta
 import requests
 import feedparser
 
+NEON_DB_URL = os.environ.get("NEON_DB_URL", "")
+
 
 class NewsDB:
     def __init__(self, db_path=None):
-        self.db_path = db_path or os.environ.get("NEWS_DB_PATH", "portfolio.db")
+        self.db_path = db_path or os.environ.get("NEWS_DB_PATH", "news.db")
+        self.use_postgres = bool(NEON_DB_URL)
         self.init_db()
 
     def init_db(self):
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS news_cache (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                summary TEXT,
-                source TEXT,
-                source_type TEXT,
-                url TEXT UNIQUE,
-                thumbnail TEXT,
-                category TEXT DEFAULT 'News',
-                trending_score INTEGER DEFAULT 0,
-                published_at TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_processed BOOLEAN DEFAULT FALSE
-            )
-        """)
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS news_metadata (
-                key TEXT PRIMARY KEY,
-                value TEXT,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
-        conn.close()
+        if self.use_postgres:
+            import psycopg2
+
+            try:
+                conn = psycopg2.connect(NEON_DB_URL)
+                c = conn.cursor()
+                c.execute("""
+                    CREATE TABLE IF NOT EXISTS news_cache (
+                        id SERIAL PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        summary TEXT,
+                        source TEXT,
+                        source_type TEXT,
+                        url TEXT UNIQUE,
+                        thumbnail TEXT,
+                        category TEXT DEFAULT 'News',
+                        trending_score INTEGER DEFAULT 0,
+                        published_at TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        is_processed BOOLEAN DEFAULT FALSE
+                    )
+                """)
+                c.execute("""
+                    CREATE TABLE IF NOT EXISTS news_metadata (
+                        key TEXT PRIMARY KEY,
+                        value TEXT,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                conn.commit()
+                c.close()
+                conn.close()
+                print("✅ Neon news tables initialized")
+            except Exception as e:
+                print(f"❌ Neon init error: {e}")
+        else:
+            conn = sqlite3.connect(self.db_path)
+            c = conn.cursor()
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS news_cache (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    summary TEXT,
+                    source TEXT,
+                    source_type TEXT,
+                    url TEXT UNIQUE,
+                    thumbnail TEXT,
+                    category TEXT DEFAULT 'News',
+                    trending_score INTEGER DEFAULT 0,
+                    published_at TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    is_processed BOOLEAN DEFAULT FALSE
+                )
+            """)
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS news_metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            conn.close()
 
     def insert_news(self, news_items):
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        for item in news_items:
+        if self.use_postgres:
+            import psycopg2
+
             try:
-                c.execute(
-                    """
-                    INSERT OR REPLACE INTO news_cache 
-                    (title, summary, source, source_type, url, thumbnail, category, trending_score, published_at, is_processed)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)
-                """,
-                    (
-                        item.get("title", ""),
-                        item.get("summary", ""),
-                        item.get("source", ""),
-                        item.get("source_type", ""),
-                        item.get("url", ""),
-                        item.get("thumbnail", ""),
-                        item.get("category", "News"),
-                        item.get("trending_score", 0),
-                        item.get("published_at", ""),
-                    ),
-                )
+                conn = psycopg2.connect(NEON_DB_URL)
+                c = conn.cursor()
+                for item in news_items:
+                    try:
+                        c.execute(
+                            """
+                            INSERT INTO news_cache 
+                            (title, summary, source, source_type, url, thumbnail, category, trending_score, published_at, is_processed)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE)
+                            ON CONFLICT (url) DO UPDATE SET
+                            title = EXCLUDED.title,
+                            summary = EXCLUDED.summary,
+                            trending_score = EXCLUDED.trending_score,
+                            is_processed = TRUE
+                        """,
+                            (
+                                item.get("title", ""),
+                                item.get("summary", ""),
+                                item.get("source", ""),
+                                item.get("source_type", ""),
+                                item.get("url", ""),
+                                item.get("thumbnail", ""),
+                                item.get("category", "News"),
+                                item.get("trending_score", 0),
+                                item.get("published_at", ""),
+                            ),
+                        )
+                    except Exception as e:
+                        pass
+                conn.commit()
+                c.close()
+                conn.close()
             except Exception as e:
-                pass
-        conn.commit()
-        conn.close()
+                print(f"Postgres insert error: {e}")
+        else:
+            conn = sqlite3.connect(self.db_path)
+            c = conn.cursor()
+            for item in news_items:
+                try:
+                    c.execute(
+                        """
+                        INSERT OR REPLACE INTO news_cache 
+                        (title, summary, source, source_type, url, thumbnail, category, trending_score, published_at, is_processed)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)
+                    """,
+                        (
+                            item.get("title", ""),
+                            item.get("summary", ""),
+                            item.get("source", ""),
+                            item.get("source_type", ""),
+                            item.get("url", ""),
+                            item.get("thumbnail", ""),
+                            item.get("category", "News"),
+                            item.get("trending_score", 0),
+                            item.get("published_at", ""),
+                        ),
+                    )
+                except Exception as e:
+                    pass
+            conn.commit()
+            conn.close()
 
     def clear_processed(self):
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        c.execute("UPDATE news_cache SET is_processed = FALSE")
-        conn.commit()
-        conn.close()
+        if self.use_postgres:
+            import psycopg2
+
+            try:
+                conn = psycopg2.connect(NEON_DB_URL)
+                c = conn.cursor()
+                c.execute("UPDATE news_cache SET is_processed = FALSE")
+                conn.commit()
+                c.close()
+                conn.close()
+            except Exception as e:
+                print(f"Clear error: {e}")
+        else:
+            conn = sqlite3.connect(self.db_path)
+            c = conn.cursor()
+            c.execute("UPDATE news_cache SET is_processed = FALSE")
+            conn.commit()
+            conn.close()
 
     def set_last_update(self):
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        c.execute(
-            """
-            INSERT OR REPLACE INTO news_metadata (key, value, updated_at)
-            VALUES ('last_update', ?, CURRENT_TIMESTAMP)
-        """,
-            (datetime.now().isoformat(),),
-        )
-        conn.commit()
-        conn.close()
+        if self.use_postgres:
+            import psycopg2
+
+            try:
+                conn = psycopg2.connect(NEON_DB_URL)
+                c = conn.cursor()
+                c.execute(
+                    """
+                    INSERT INTO news_metadata (key, value, updated_at)
+                    VALUES ('last_update', %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP
+                """,
+                    (datetime.now().isoformat(),),
+                )
+                conn.commit()
+                c.close()
+                conn.close()
+            except Exception as e:
+                print(f"Set update error: {e}")
+        else:
+            conn = sqlite3.connect(self.db_path)
+            c = conn.cursor()
+            c.execute(
+                """
+                INSERT OR REPLACE INTO news_metadata (key, value, updated_at)
+                VALUES ('last_update', ?, CURRENT_TIMESTAMP)
+            """,
+                (datetime.now().isoformat(),),
+            )
+            conn.commit()
+            conn.close()
 
 
-db = NewsDB("news.db")
+db = NewsDB()
 
 
 def get_tech_giant_blogs():
@@ -363,18 +474,7 @@ def run_full_crew():
     print("Starting ahmadAI News Crew...")
     all_news = []
 
-    print("1. Searching DuckDuckGo for AI news...")
-    try:
-        for query in [
-            "AI tool launched 2025",
-            "new artificial intelligence released",
-            "AI startup funding announced",
-        ]:
-            all_news.extend(web_search_duckduckgo(query, 15))
-    except Exception as e:
-        print(f"DuckDuckGo error: {e}")
-
-    print("2. Fetching Tech Giant blogs...")
+    print("1. Fetching Tech Giant blogs...")
     try:
         blogs = get_tech_giant_blogs()
         for source, url in blogs:
@@ -382,7 +482,7 @@ def run_full_crew():
     except Exception as e:
         print(f"Blogs error: {e}")
 
-    print("3. Searching Reddit...")
+    print("2. Searching Reddit...")
     try:
         for sub in [
             "artificial",
@@ -395,14 +495,14 @@ def run_full_crew():
     except Exception as e:
         print(f"Reddit error: {e}")
 
-    print("4. Searching YouTube...")
+    print("3. Searching YouTube...")
     try:
         api_key = os.environ.get("YOUTUBE_API_KEY", "")
         all_news.extend(search_youtube(api_key, "AI news today"))
     except Exception as e:
         print(f"YouTube error: {e}")
 
-    print("5. Searching Hacker News...")
+    print("4. Searching Hacker News...")
     try:
         all_news.extend(search_hackernews("AI"))
     except Exception as e:
@@ -410,22 +510,26 @@ def run_full_crew():
 
     print(f"Total raw items: {len(all_news)}")
 
-    print("6. Deduplicating...")
-    all_news = deduplicate_news(all_news)
-    print(f"After dedup: {len(all_news)}")
+    if all_news:
+        print("5. Deduplicating...")
+        all_news = deduplicate_news(all_news)
+        print(f"After dedup: {len(all_news)}")
 
-    print("7. Filtering relevance...")
-    all_news = filter_relevance(all_news)
+        print("6. Filtering relevance...")
+        all_news = filter_relevance(all_news)
 
-    print("8. Ranking...")
-    all_news = rank_news(all_news)
+        print("7. Ranking...")
+        all_news = rank_news(all_news)
 
-    print("9. Storing in database...")
-    db.clear_processed()
-    db.insert_news(all_news)
-    db.set_last_update()
+        print("8. Storing in database...")
+        db.clear_processed()
+        db.insert_news(all_news)
+        db.set_last_update()
 
-    print(f"Done! Stored {len(all_news)} news items")
+        print(f"Done! Stored {len(all_news)} news items")
+    else:
+        print("No news items collected")
+
     return all_news
 
 

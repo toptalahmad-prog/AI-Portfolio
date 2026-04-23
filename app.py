@@ -2733,9 +2733,17 @@ def ahmadai():
 # ==========================================
 
 NEWS_DB_PATH = os.environ.get("NEWS_DB_PATH", "news.db")
+NEON_DB_URL = os.environ.get("NEON_DB_URL", "")
 
 
 def get_news_db():
+    if NEON_DB_URL:
+        import psycopg2
+
+        conn = psycopg2.connect(NEON_DB_URL)
+        conn.autocommit = True
+        return conn
+
     import sqlite3
 
     conn = sqlite3.connect(NEWS_DB_PATH)
@@ -2744,6 +2752,43 @@ def get_news_db():
 
 
 def init_news_db():
+    if NEON_DB_URL:
+        import psycopg2
+
+        try:
+            conn = psycopg2.connect(NEON_DB_URL)
+            c = conn.cursor()
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS news_cache (
+                    id SERIAL PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    summary TEXT,
+                    source TEXT,
+                    source_type TEXT,
+                    url TEXT UNIQUE,
+                    thumbnail TEXT,
+                    category TEXT DEFAULT 'News',
+                    trending_score INTEGER DEFAULT 0,
+                    published_at TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    is_processed BOOLEAN DEFAULT FALSE
+                )
+            """)
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS news_metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            c.close()
+            conn.close()
+            print("✅ Neon news tables created")
+        except Exception as e:
+            print(f"❌ Neon init error: {e}")
+        return
+
     import sqlite3
 
     conn = sqlite3.connect(NEWS_DB_PATH)
@@ -2775,49 +2820,78 @@ def init_news_db():
     conn.close()
 
 
+@app.route("/api/news/debug")
+def news_debug():
+    import sqlite3
+
+    try:
+        init_news_db()
+        conn = sqlite3.connect(NEWS_DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [r[0] for r in c.fetchall()]
+        c.execute("SELECT COUNT(*) FROM news_cache")
+        total = c.fetchone()[0]
+        c.execute("SELECT COUNT(*) FROM news_cache WHERE is_processed = TRUE")
+        processed = c.fetchone()[0]
+        conn.close()
+        return jsonify(
+            {
+                "db_path": NEWS_DB_PATH,
+                "tables": tables,
+                "total_news": total,
+                "processed_news": processed,
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
 @app.route("/api/news")
 def get_news():
     try:
         init_news_db()
         conn = get_news_db()
-        c = conn.cursor()
+        is_postgres = bool(NEON_DB_URL)
 
         category = request.args.get("category", "all")
         source_type = request.args.get("source", "all")
         limit = int(request.args.get("limit", 50))
 
-        query = "SELECT * FROM news_cache WHERE is_processed = TRUE"
+        query = "SELECT id, title, summary, source, source_type, url, thumbnail, category, trending_score, published_at FROM news_cache WHERE is_processed = TRUE"
         params = []
 
         if category and category != "all":
-            query += " AND category = ?"
+            query += " AND category = %s"
             params.append(category)
 
         if source_type and source_type != "all":
-            query += " AND source_type = ?"
+            query += " AND source_type = %s"
             params.append(source_type)
 
-        query += " ORDER BY trending_score DESC, created_at DESC LIMIT ?"
+        query += " ORDER BY trending_score DESC, created_at DESC LIMIT %s"
         params.append(limit)
 
+        c = conn.cursor()
         c.execute(query, params)
         rows = c.fetchall()
+        c.close()
         conn.close()
 
         news = []
         for row in rows:
             news.append(
                 {
-                    "id": row["id"],
-                    "title": row["title"],
-                    "summary": row["summary"] or "",
-                    "source": row["source"] or "Unknown",
-                    "source_type": row["source_type"] or "blog",
-                    "url": row["url"] or "",
-                    "thumbnail": row["thumbnail"] or "",
-                    "category": row["category"] or "News",
-                    "trending_score": row["trending_score"] or 0,
-                    "published_at": row["published_at"] or "",
+                    "id": row[0],
+                    "title": row[1] or "",
+                    "summary": row[2] or "",
+                    "source": row[3] or "Unknown",
+                    "source_type": row[4] or "blog",
+                    "url": row[5] or "",
+                    "thumbnail": row[6] or "",
+                    "category": row[7] or "News",
+                    "trending_score": row[8] or 0,
+                    "published_at": row[9] or "",
                 }
             )
 
@@ -2828,7 +2902,8 @@ def get_news():
             c2.execute("SELECT value FROM news_metadata WHERE key = 'last_update'")
             row = c2.fetchone()
             if row:
-                last_update = row["value"]
+                last_update = row[0]
+            c2.close()
             conn2.close()
         except:
             pass
