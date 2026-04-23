@@ -504,7 +504,12 @@ def run_full_crew():
         print("7. Ranking...")
         all_news = rank_news(all_news)
 
-        print("8. Storing in database...")
+        print("8. Re-categorizing all items...")
+        for item in all_news:
+            text = item.get("title", "") + " " + item.get("summary", "")
+            item["category"] = categorize_post(text)
+
+        print("9. Storing in database...")
         db.clear_processed()
         db.insert_news(all_news)
         db.set_last_update()

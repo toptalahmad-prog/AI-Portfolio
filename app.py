@@ -2819,7 +2819,7 @@ def get_news():
         params = []
 
         if category and category != "all":
-            query += " AND category = ?"
+            query += " AND LOWER(category) = LOWER(?)"
             params.append(category)
 
         if source_type and source_type != "all":
