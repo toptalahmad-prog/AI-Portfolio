@@ -2827,11 +2827,11 @@ def get_news():
             params.append(source_type)
 
         if start_date:
-            query += " AND published_at >= ?"
+            query += " AND date(published_at) >= ?"
             params.append(start_date)
 
         if end_date:
-            query += " AND published_at <= ?"
+            query += " AND date(published_at) <= ?"
             params.append(end_date)
 
         query += " ORDER BY trending_score DESC, created_at DESC LIMIT ?"
