@@ -315,12 +315,13 @@ def categorize_post(text):
         "extension",
         "plugin",
         "opensources",
-        "open sources",
-        "open-sources",
+        "open source",
+        "open-source",
+        "gateway",
+        "platform",
         "create",
         "build",
         "make",
-        "launch",
         "introduces",
         "new startup",
         "y combinator",
@@ -330,6 +331,11 @@ def categorize_post(text):
         "series b",
         "raises",
         "raises $",
+        "show hn",
+        "showhn",
+        "hacker news",
+        "open-source",
+        "github",
     ]
 
     # Check for Research indicators (studies, papers, discoveries)
