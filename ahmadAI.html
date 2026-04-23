@@ -152,9 +152,62 @@
         .tabs {
             display: flex;
             gap: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             overflow-x: auto;
             padding-bottom: 5px;
+        }
+        
+        .date-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .date-filter label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .date-filter input[type="date"] {
+            background: var(--dark-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        
+        .date-filter input[type="date"]:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .date-filter input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+        
+        .date-filter .clear-dates {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .date-filter .clear-dates:hover {
+            border-color: var(--primary);
+            color: var(--primary);
         }
         
         .tab {
@@ -553,6 +606,16 @@
             <button class="tab" data-filter="tutorial">Tutorial</button>
         </div>
         
+        <div class="date-filter">
+            <label><i class="fas fa-calendar"></i> From:</label>
+            <input type="date" id="startDate" onchange="filterByDate()">
+            <label><i class="fas fa-calendar"></i> To:</label>
+            <input type="date" id="endDate" onchange="filterByDate()">
+            <button class="clear-dates" onclick="clearDateFilter()">
+                <i class="fas fa-times"></i> Clear
+            </button>
+        </div>
+        
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Search AI news..." oninput="filterNews()">
         </div>
@@ -603,11 +666,24 @@
         let displayedCount = 0;
         let currentFilter = 'all';
         let searchQuery = '';
+        let startDate = '';
+        let endDate = '';
         const ITEMS_PER_PAGE = 20;
         
         async function loadNews() {
             try {
-                const response = await fetch('/api/news');
+                let url = '/api/news?limit=200';
+                if (currentFilter !== 'all') {
+                    url += '&category=' + currentFilter;
+                }
+                if (startDate) {
+                    url += '&start_date=' + startDate;
+                }
+                if (endDate) {
+                    url += '&end_date=' + endDate;
+                }
+                
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 if (data.news && data.news.length > 0) {
@@ -773,6 +849,20 @@
             searchQuery = document.getElementById('searchInput').value;
             displayedCount = 0;
             renderNews();
+        }
+        
+        function filterByDate() {
+            startDate = document.getElementById('startDate').value;
+            endDate = document.getElementById('endDate').value;
+            loadNews();
+        }
+        
+        function clearDateFilter() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            startDate = '';
+            endDate = '';
+            loadNews();
         }
         
         function loadMore() {

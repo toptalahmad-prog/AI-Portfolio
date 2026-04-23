@@ -271,6 +271,24 @@ def categorize_post(text):
             "debut",
             "new product",
             "new model",
+            "new feature",
+            "new version",
+            "launches",
+            "announces",
+            "releases",
+            "introduces",
+            "unveils",
+            "new ai",
+            "new tool",
+            "new platform",
+            "new service",
+            "coming soon",
+            "beta launch",
+            "public release",
+            "debuts",
+            "rolls out",
+            "brings",
+            "launching",
         ]
     ):
         return "Launch"
@@ -284,6 +302,17 @@ def categorize_post(text):
             "findings",
             "discovery",
             "breakthrough",
+            "scientists",
+            "experiment",
+            "analysis",
+            "published",
+            " preprint",
+            "journal",
+            "academic",
+            "proves",
+            "discovers",
+            "reveals",
+            "shows that",
         ]
     ):
         return "Research"

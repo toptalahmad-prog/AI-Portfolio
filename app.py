@@ -2811,7 +2811,9 @@ def get_news():
 
         category = request.args.get("category", "all")
         source_type = request.args.get("source", "all")
-        limit = int(request.args.get("limit", 50))
+        start_date = request.args.get("start_date", "")
+        end_date = request.args.get("end_date", "")
+        limit = int(request.args.get("limit", 100))
 
         query = "SELECT id, title, summary, source, source_type, url, thumbnail, category, trending_score, published_at FROM news_cache WHERE is_processed = 1"
         params = []
@@ -2823,6 +2825,14 @@ def get_news():
         if source_type and source_type != "all":
             query += " AND source_type = ?"
             params.append(source_type)
+
+        if start_date:
+            query += " AND published_at >= ?"
+            params.append(start_date)
+
+        if end_date:
+            query += " AND published_at <= ?"
+            params.append(end_date)
 
         query += " ORDER BY trending_score DESC, created_at DESC LIMIT ?"
         params.append(limit)
